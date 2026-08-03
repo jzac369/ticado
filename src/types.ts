@@ -57,6 +57,7 @@ export interface Ticket {
   customerName: string;
   requesterName: string;
   requesterEmail?: string;
+  department?: string;
   category: string;
   priority: TicketPriority;
   status: TicketStatus;

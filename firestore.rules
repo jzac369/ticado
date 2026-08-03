@@ -26,11 +26,13 @@ service cloud.firestore {
       }
     }
 
-    // Public ticket intake may create a new customer by name; editing
-    // existing customer records still requires sign-in.
+    // The public intake form lists existing companies in a dropdown and
+    // may create a new one by name; editing/deleting still requires sign-in.
+    // Note: this makes customer records (name, contact, email) publicly
+    // readable via the API, not just via the app's UI.
     match /customers/{customerId} {
-      allow read, update, delete: if isSignedIn();
-      allow create: if true;
+      allow read, create: if true;
+      allow update, delete: if isSignedIn();
     }
 
     match /users/{userId} {

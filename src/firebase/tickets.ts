@@ -12,6 +12,7 @@ import {
   updateDoc,
 } from 'firebase/firestore';
 import { db } from './config';
+import { uploadAttachments } from './attachments';
 import type { Attachment, Ticket, TicketMessage, TicketPriority, TicketStatus, ActivityEntry } from '../types';
 
 const ticketsCol = collection(db, 'tickets');
@@ -83,9 +84,11 @@ export interface NewTicketInput {
   customerName: string;
   requesterName: string;
   requesterEmail?: string;
+  department?: string;
   category: string;
   priority: TicketPriority;
   channel: Ticket['channel'];
+  files?: File[];
 }
 
 export async function createTicket(input: NewTicketInput) {
@@ -99,6 +102,7 @@ export async function createTicket(input: NewTicketInput) {
     customerName: input.customerName,
     requesterName: input.requesterName,
     requesterEmail: input.requesterEmail ?? '',
+    department: input.department ?? '',
     category: input.category,
     priority: input.priority,
     status: 'otvoreny' as TicketStatus,
@@ -109,12 +113,16 @@ export async function createTicket(input: NewTicketInput) {
     closedAt: null,
   });
 
+  const attachments =
+    input.files && input.files.length > 0 ? await uploadAttachments(docRef.id, input.files) : undefined;
+
   await addDoc(collection(db, 'tickets', docRef.id, 'messages'), {
     ticketId: docRef.id,
     authorName: input.requesterName,
     authorEmail: input.requesterEmail ?? '',
     body: input.description || 'Ticket vytvorený.',
     isPrivate: false,
+    ...(attachments ? { attachments } : {}),
     createdAt: serverTimestamp(),
   });
 

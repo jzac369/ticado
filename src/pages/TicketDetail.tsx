@@ -347,7 +347,22 @@ export function TicketDetailPage() {
                 )}
               </div>
 
-              {attachError && <div style={{ color: 'var(--color-danger)', fontSize: 12.5, marginTop: 8 }}>{attachError}</div>}
+              {attachError && (
+                <div
+                  style={{
+                    marginTop: 10,
+                    padding: '8px 12px',
+                    background: 'var(--color-danger-bg)',
+                    border: '1px solid var(--color-danger)',
+                    borderRadius: 'var(--radius-md)',
+                    color: 'var(--color-danger)',
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                  }}
+                >
+                  ⚠ {attachError}
+                </div>
+              )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
@@ -438,7 +453,13 @@ export function TicketDetailPage() {
               </div>
               <div>
                 <div style={{ fontWeight: 700, fontSize: 13.5 }}>{ticket.requesterName}</div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-faint)' }}>{ticket.customerName}</div>
+                <div style={{ fontSize: 12, color: 'var(--color-text-faint)' }}>
+                  {ticket.customerName}
+                  {ticket.department && <> · {ticket.department}</>}
+                </div>
+                {ticket.requesterEmail && (
+                  <div style={{ fontSize: 11.5, color: 'var(--color-text-faint)' }}>{ticket.requesterEmail}</div>
+                )}
               </div>
             </div>
           </Panel>

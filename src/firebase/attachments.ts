@@ -10,9 +10,19 @@ export async function uploadAttachment(ticketId: string, file: File): Promise<At
   }
   const path = `tickets/${ticketId}/${Date.now()}-${file.name}`;
   const storageRef = ref(storage, path);
-  const snapshot = await uploadBytes(storageRef, file);
-  const url = await getDownloadURL(snapshot.ref);
-  return { name: file.name, url, size: file.size, contentType: file.type || 'application/octet-stream' };
+  try {
+    const snapshot = await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(snapshot.ref);
+    return { name: file.name, url, size: file.size, contentType: file.type || 'application/octet-stream' };
+  } catch (err) {
+    const code = (err as { code?: string })?.code ?? '';
+    if (code.startsWith('storage/')) {
+      throw new Error(
+        'Nahrávanie súborov nie je nastavené (Firebase Storage nie je zapnutý pre tento projekt). Kontaktujte administrátora.',
+      );
+    }
+    throw err;
+  }
 }
 
 export async function uploadAttachments(ticketId: string, files: File[]): Promise<Attachment[]> {

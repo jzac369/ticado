@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { subscribeCustomers, createCustomer } from '../firebase/customers';
+import { subscribeCustomers, createCustomer, updateCustomer, deleteCustomer } from '../firebase/customers';
 import { subscribeTickets } from '../firebase/tickets';
 import type { Customer, Ticket } from '../types';
 
@@ -11,6 +11,8 @@ export function CustomersPage() {
   const [contactPerson, setContactPerson] = useState('');
   const [email, setEmail] = useState('');
   const [emailDomain, setEmailDomain] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<Partial<Customer>>({});
   const navigate = useNavigate();
 
   useEffect(() => subscribeCustomers(setCustomers), []);
@@ -35,6 +37,36 @@ export function CustomersPage() {
     setContactPerson('');
     setEmail('');
     setEmailDomain('');
+  }
+
+  function startEdit(c: Customer) {
+    setEditingId(c.id);
+    setEditDraft({
+      name: c.name,
+      contactPerson: c.contactPerson ?? '',
+      email: c.email ?? '',
+      emailDomain: c.emailDomain ?? '',
+    });
+  }
+
+  async function saveEdit(id: string) {
+    await updateCustomer(id, {
+      name: (editDraft.name ?? '').trim(),
+      contactPerson: (editDraft.contactPerson ?? '').trim(),
+      email: (editDraft.email ?? '').trim(),
+      emailDomain: (editDraft.emailDomain ?? '').trim().replace(/^@/, ''),
+    });
+    setEditingId(null);
+  }
+
+  async function handleDelete(c: Customer) {
+    const count = ticketCounts.get(c.id) ?? 0;
+    const warning =
+      count > 0
+        ? `Zákazník "${c.name}" má ${count} ticketov, ktoré týmto nezmažete, ale ostanú bez platného zákazníka. Naozaj chcete zmazať zákazníka?`
+        : `Naozaj chcete zmazať zákazníka "${c.name}"?`;
+    if (!window.confirm(warning)) return;
+    await deleteCustomer(c.id);
   }
 
   return (
@@ -113,20 +145,74 @@ export function CustomersPage() {
                 </td>
               </tr>
             )}
-            {customers.map((c) => (
-              <tr
-                key={c.id}
-                onClick={() => navigate(`/customers/${c.id}`)}
-                style={{ borderTop: '1px solid var(--color-border)', cursor: 'pointer' }}
-              >
-                <td style={{ padding: '12px 14px', fontWeight: 700 }}>{c.name}</td>
-                <td style={{ padding: '12px 14px' }}>{c.contactPerson || '—'}</td>
-                <td style={{ padding: '12px 14px' }}>{c.email || '—'}</td>
-                <td style={{ padding: '12px 14px', color: 'var(--color-text-faint)' }}>{c.emailDomain || '—'}</td>
-                <td style={{ padding: '12px 14px' }}>{ticketCounts.get(c.id) ?? 0}</td>
-                <td style={{ padding: '12px 14px', color: 'var(--color-text-faint)' }}>›</td>
-              </tr>
-            ))}
+            {customers.map((c) => {
+              const isEditing = editingId === c.id;
+              return (
+                <tr
+                  key={c.id}
+                  onClick={() => !isEditing && navigate(`/customers/${c.id}`)}
+                  style={{ borderTop: '1px solid var(--color-border)', cursor: isEditing ? 'default' : 'pointer' }}
+                >
+                  {isEditing ? (
+                    <>
+                      <td style={{ padding: '8px 14px' }} onClick={(e) => e.stopPropagation()}>
+                        <input
+                          value={editDraft.name ?? ''}
+                          onChange={(e) => setEditDraft((d) => ({ ...d, name: e.target.value }))}
+                          style={cellInputStyle}
+                        />
+                      </td>
+                      <td style={{ padding: '8px 14px' }} onClick={(e) => e.stopPropagation()}>
+                        <input
+                          value={editDraft.contactPerson ?? ''}
+                          onChange={(e) => setEditDraft((d) => ({ ...d, contactPerson: e.target.value }))}
+                          style={cellInputStyle}
+                        />
+                      </td>
+                      <td style={{ padding: '8px 14px' }} onClick={(e) => e.stopPropagation()}>
+                        <input
+                          value={editDraft.email ?? ''}
+                          onChange={(e) => setEditDraft((d) => ({ ...d, email: e.target.value }))}
+                          style={cellInputStyle}
+                        />
+                      </td>
+                      <td style={{ padding: '8px 14px' }} onClick={(e) => e.stopPropagation()}>
+                        <input
+                          value={editDraft.emailDomain ?? ''}
+                          onChange={(e) => setEditDraft((d) => ({ ...d, emailDomain: e.target.value }))}
+                          style={cellInputStyle}
+                        />
+                      </td>
+                      <td style={{ padding: '12px 14px' }}>{ticketCounts.get(c.id) ?? 0}</td>
+                      <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => saveEdit(c.id)} style={saveBtnStyle}>
+                          Uložiť
+                        </button>
+                        <button onClick={() => setEditingId(null)} style={cancelBtnStyle}>
+                          Zrušiť
+                        </button>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      <td style={{ padding: '12px 14px', fontWeight: 700 }}>{c.name}</td>
+                      <td style={{ padding: '12px 14px' }}>{c.contactPerson || '—'}</td>
+                      <td style={{ padding: '12px 14px' }}>{c.email || '—'}</td>
+                      <td style={{ padding: '12px 14px', color: 'var(--color-text-faint)' }}>{c.emailDomain || '—'}</td>
+                      <td style={{ padding: '12px 14px' }}>{ticketCounts.get(c.id) ?? 0}</td>
+                      <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
+                        <button onClick={() => startEdit(c)} style={editBtnStyle}>
+                          Upraviť
+                        </button>
+                        <button onClick={() => handleDelete(c)} style={deleteBtnStyle}>
+                          Zmazať
+                        </button>
+                      </td>
+                    </>
+                  )}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -142,3 +228,28 @@ const inputStyle = {
   borderRadius: 'var(--radius-md)',
   background: 'var(--color-surface)',
 } as const;
+
+const cellInputStyle = {
+  width: '100%',
+  padding: '6px 8px',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-sm)',
+  background: 'var(--color-surface)',
+  fontSize: 13,
+} as const;
+
+const actionBtnBase = {
+  padding: '5px 10px',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-sm)',
+  background: 'var(--color-surface)',
+  fontSize: 12,
+  fontWeight: 600,
+  marginRight: 6,
+  cursor: 'pointer',
+} as const;
+
+const editBtnStyle = { ...actionBtnBase };
+const cancelBtnStyle = { ...actionBtnBase };
+const saveBtnStyle = { ...actionBtnBase, background: 'var(--color-primary)', color: '#fff', borderColor: 'var(--color-primary)' };
+const deleteBtnStyle = { ...actionBtnBase, color: 'var(--color-danger)', borderColor: 'var(--color-danger)' };

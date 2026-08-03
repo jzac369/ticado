@@ -1,4 +1,4 @@
-import { addDoc, collection, doc, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from './config';
 import type { Customer } from '../types';
 
@@ -19,4 +19,12 @@ export function subscribeCustomer(customerId: string, callback: (customer: Custo
 
 export async function createCustomer(input: Omit<Customer, 'id' | 'createdAt'>) {
   return addDoc(customersCol, { ...input, createdAt: serverTimestamp() });
+}
+
+export async function updateCustomer(customerId: string, input: Partial<Omit<Customer, 'id' | 'createdAt'>>) {
+  return updateDoc(doc(db, 'customers', customerId), input);
+}
+
+export async function deleteCustomer(customerId: string) {
+  return deleteDoc(doc(db, 'customers', customerId));
 }

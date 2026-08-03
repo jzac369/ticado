@@ -271,7 +271,7 @@ export function TicketsListPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
-              {['Ticket', 'Predmet a zákazník', 'Stav', 'Priorita', 'Vytvorený', 'Uzavretý', ''].map((h) => (
+              {['Ticket', 'Predmet a zákazník', 'Stav', 'Priorita', 'Pridelené', 'Vytvorený', 'Uzavretý', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--color-text-faint)' }}>
                   {h}
                 </th>
@@ -281,14 +281,14 @@ export function TicketsListPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   Načítavam tickety…
                 </td>
               </tr>
             )}
             {!loading && paged.length === 0 && (
               <tr>
-                <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   Žiadne tickety nezodpovedajú filtru.
                 </td>
               </tr>
@@ -311,6 +311,9 @@ export function TicketsListPage() {
                 </td>
                 <td style={{ padding: '12px 14px' }}>
                   <PriorityBadge priority={t.priority} />
+                </td>
+                <td style={{ padding: '12px 14px' }}>
+                  {t.assignedTo ? t.assignedTo : <span style={{ color: 'var(--color-text-faint)' }}>— Bez priradenia —</span>}
                 </td>
                 <td style={{ padding: '12px 14px', color: 'var(--color-text-muted)' }}>{formatDate(t, 'createdAt')}</td>
                 <td style={{ padding: '12px 14px', color: 'var(--color-text-muted)' }}>{formatDate(t, 'closedAt')}</td>
