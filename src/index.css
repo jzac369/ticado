@@ -1,0 +1,112 @@
+:root {
+  --color-bg: #f5f6fa;
+  --color-surface: #ffffff;
+  --color-surface-2: #f0f1f7;
+  --color-border: #e2e4ec;
+  --color-text: #1c1d2b;
+  --color-text-muted: #6b6f85;
+  --color-text-faint: #9498ab;
+
+  --color-primary: #4338ca;
+  --color-primary-hover: #362eb0;
+  --color-primary-bg: rgba(67, 56, 202, 0.08);
+  --color-primary-border: rgba(67, 56, 202, 0.35);
+
+  --color-success: #16a34a;
+  --color-success-bg: rgba(22, 163, 74, 0.1);
+  --color-warning: #d97706;
+  --color-warning-bg: rgba(217, 119, 6, 0.1);
+  --color-danger: #dc2626;
+  --color-danger-bg: rgba(220, 38, 38, 0.1);
+  --color-info: #2563eb;
+  --color-info-bg: rgba(37, 99, 235, 0.1);
+
+  --shadow-sm: 0 1px 2px rgba(16, 17, 33, 0.06);
+  --shadow-md: 0 4px 16px rgba(16, 17, 33, 0.08);
+  --shadow-lg: 0 12px 32px rgba(16, 17, 33, 0.14);
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  --sans: 'Segoe UI', system-ui, Roboto, sans-serif;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-bg: #101119;
+    --color-surface: #171826;
+    --color-surface-2: #1e2032;
+    --color-border: #2a2c3f;
+    --color-text: #e9eaf3;
+    --color-text-muted: #a3a6bd;
+    --color-text-faint: #767a94;
+
+    --color-primary: #818cf8;
+    --color-primary-hover: #a5b0fb;
+    --color-primary-bg: rgba(129, 140, 248, 0.14);
+    --color-primary-border: rgba(129, 140, 248, 0.4);
+
+    --color-success: #4ade80;
+    --color-success-bg: rgba(74, 222, 128, 0.12);
+    --color-warning: #fbbf24;
+    --color-warning-bg: rgba(251, 191, 36, 0.12);
+    --color-danger: #f87171;
+    --color-danger-bg: rgba(248, 113, 113, 0.14);
+    --color-info: #60a5fa;
+    --color-info-bg: rgba(96, 165, 250, 0.12);
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font: 14px/1.5 var(--sans);
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 8px;
+}
