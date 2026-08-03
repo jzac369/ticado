@@ -1,7 +1,9 @@
 import {
   addDoc,
   collection,
+  collectionGroup,
   doc,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -35,6 +37,20 @@ export function subscribeMessages(ticketId: string, callback: (messages: TicketM
     collection(db, 'tickets', ticketId, 'messages'),
     orderBy('createdAt', 'asc'),
   );
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TicketMessage));
+  });
+}
+
+export function subscribeGlobalActivity(callback: (entries: ActivityEntry[]) => void, take = 10) {
+  const q = query(collectionGroup(db, 'activity'), orderBy('createdAt', 'desc'), limit(take));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as ActivityEntry));
+  });
+}
+
+export function subscribeRecentMessages(callback: (messages: TicketMessage[]) => void, take = 300) {
+  const q = query(collectionGroup(db, 'messages'), orderBy('createdAt', 'desc'), limit(take));
   return onSnapshot(q, (snap) => {
     callback(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TicketMessage));
   });
