@@ -46,8 +46,3 @@ export function PriorityBadge({ priority }: { priority: TicketPriority }) {
   const c = priorityColors[priority];
   return <Pill label={PRIORITY_LABELS[priority]} fg={c.fg} bg={c.bg} />;
 }
-
-export function SlaBadge({ breached }: { breached: boolean }) {
-  if (!breached) return <span style={{ color: 'var(--color-text-faint)' }}>—</span>;
-  return <Pill label="Po SLA" fg="#fff" bg="var(--color-danger)" />;
-}

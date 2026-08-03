@@ -6,27 +6,51 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    // Public ticket intake: anyone can create a new ticket, its first
+    // message, and an activity entry - but only in a fresh, unassigned,
+    // open state. Reading, updating, and deleting still require sign-in.
     match /tickets/{ticketId} {
-      allow read, write: if isSignedIn();
+      allow read, update, delete: if isSignedIn();
+      allow create: if isSignedIn() ||
+        (request.resource.data.status == 'otvoreny' &&
+         request.resource.data.assignedTo == null &&
+         request.resource.data.closedAt == null);
 
       match /messages/{messageId} {
-        allow read, write: if isSignedIn();
+        allow read, update, delete: if isSignedIn();
+        allow create: if isSignedIn() || request.resource.data.isPrivate == false;
       }
       match /activity/{entryId} {
-        allow read, write: if isSignedIn();
+        allow read, update, delete: if isSignedIn();
+        allow create: if true;
       }
     }
 
+    // Public ticket intake may create a new customer by name; editing
+    // existing customer records still requires sign-in.
     match /customers/{customerId} {
-      allow read, write: if isSignedIn();
+      allow read, update, delete: if isSignedIn();
+      allow create: if true;
     }
 
     match /users/{userId} {
       allow read, write: if isSignedIn();
     }
 
-    match /meta/{docId} {
+    match /agents/{agentId} {
       allow read, write: if isSignedIn();
+    }
+
+    // The ticket-number counter must be readable/incrementable by the
+    // public intake form too, but only as a same-document +1 increment.
+    match /meta/{docId} {
+      allow read: if true;
+      allow write: if isSignedIn() ||
+        (docId == 'ticketCounter' &&
+         request.resource.data.keys().hasOnly(['value']) &&
+         request.resource.data.value is int &&
+         (!exists(/databases/$(database)/documents/meta/$(docId)) ||
+          request.resource.data.value == resource.data.value + 1));
     }
   }
 }

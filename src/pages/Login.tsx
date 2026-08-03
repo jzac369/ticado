@@ -1,5 +1,5 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Logo } from '../components/Logo';
 
@@ -169,6 +169,20 @@ export function LoginPage() {
           >
             {submitting ? 'Prihlasujem…' : 'Prihlásiť sa →'}
           </button>
+
+          <div
+            style={{
+              marginTop: 18,
+              paddingTop: 16,
+              borderTop: '1px solid var(--color-border)',
+              textAlign: 'center',
+              fontSize: 12.5,
+            }}
+          >
+            <Link to="/support" style={{ color: 'var(--color-text-muted)' }}>
+              🌐 Nahlásiť problém bez prihlásenia →
+            </Link>
+          </div>
         </form>
       </div>
     </div>

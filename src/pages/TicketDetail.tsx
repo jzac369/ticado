@@ -2,17 +2,18 @@ import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode
 import { Link, useParams } from 'react-router-dom';
 import {
   addTicketMessage,
-  isSlaBreached,
   subscribeActivity,
   subscribeMessages,
   subscribeTicket,
   updateTicketAssignment,
   updateTicketStatus,
 } from '../firebase/tickets';
-import type { ActivityEntry, Ticket, TicketMessage, TicketStatus } from '../types';
+import type { ActivityEntry, Attachment, Ticket, TicketMessage, TicketStatus } from '../types';
 import { STATUS_LABELS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { PriorityBadge, StatusBadge, SlaBadge } from '../components/Badges';
+import { PriorityBadge, StatusBadge } from '../components/Badges';
+import { subscribeAgents, type Agent } from '../firebase/agents';
+import { uploadAttachments } from '../firebase/attachments';
 
 function fmt(ts: TicketMessage['createdAt']) {
   if (!ts) return '';
@@ -25,15 +26,66 @@ function fmt(ts: TicketMessage['createdAt']) {
   });
 }
 
+function formatSize(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function AttachmentList({ attachments }: { attachments?: Attachment[] }) {
+  if (!attachments || attachments.length === 0) return null;
+  return (
+    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+      {attachments.map((a, i) =>
+        a.contentType.startsWith('image/') ? (
+          <a key={i} href={a.url} target="_blank" rel="noreferrer">
+            <img
+              src={a.url}
+              alt={a.name}
+              style={{ maxWidth: 160, maxHeight: 120, borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}
+            />
+          </a>
+        ) : (
+          <a
+            key={i}
+            href={a.url}
+            target="_blank"
+            rel="noreferrer"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              fontSize: 12,
+              padding: '6px 10px',
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-sm)',
+              color: 'var(--color-text)',
+            }}
+          >
+            📎 {a.name} <span style={{ color: 'var(--color-text-faint)' }}>({formatSize(a.size)})</span>
+          </a>
+        ),
+      )}
+    </div>
+  );
+}
+
 export function TicketDetailPage() {
   const { id } = useParams();
   const { user } = useAuth();
   const [ticket, setTicket] = useState<Ticket | null | undefined>(undefined);
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [reply, setReply] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [sending, setSending] = useState(false);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [dragOver, setDragOver] = useState(false);
+  const [attachError, setAttachError] = useState<string | null>(null);
+
+  useEffect(() => subscribeAgents(setAgents), []);
 
   useEffect(() => {
     if (!id) return;
@@ -58,18 +110,43 @@ export function TicketDetailPage() {
 
   async function handleReply(e: FormEvent) {
     e.preventDefault();
-    if (!reply.trim() || !id) return;
+    if ((!reply.trim() && pendingFiles.length === 0) || !id) return;
     setSending(true);
+    setAttachError(null);
     try {
+      const attachments = pendingFiles.length > 0 ? await uploadAttachments(id, pendingFiles) : undefined;
       await addTicketMessage(id, {
         authorName: actorName,
         body: reply.trim(),
         isPrivate,
+        attachments,
       });
       setReply('');
       setIsPrivate(false);
+      setPendingFiles([]);
+    } catch (err) {
+      setAttachError(err instanceof Error ? err.message : 'Nepodarilo sa nahrať prílohu.');
     } finally {
       setSending(false);
+    }
+  }
+
+  function addFiles(files: FileList | File[]) {
+    setPendingFiles((prev) => [...prev, ...Array.from(files)]);
+  }
+
+  function removeFile(index: number) {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const items = Array.from(e.clipboardData.items);
+    const imageFiles = items
+      .filter((item) => item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((f): f is File => f !== null);
+    if (imageFiles.length > 0) {
+      addFiles(imageFiles);
     }
   }
 
@@ -97,7 +174,6 @@ export function TicketDetailPage() {
       <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
         <StatusBadge status={ticket.status} />
         <PriorityBadge priority={ticket.priority} />
-        {isSlaBreached(ticket) && <SlaBadge breached />}
       </div>
 
       <h1 style={{ fontSize: 24, margin: '0 0 6px' }}>{ticket.subject}</h1>
@@ -169,6 +245,7 @@ export function TicketDetailPage() {
                   <div style={{ fontSize: 12, color: 'var(--color-text-faint)' }}>{fmt(m.createdAt)}</div>
                 </div>
                 <div style={{ fontSize: 13.5, whiteSpace: 'pre-wrap' }}>{m.body}</div>
+                <AttachmentList attachments={m.attachments} />
               </div>
             ))}
             {messages.length === 0 && (
@@ -181,6 +258,7 @@ export function TicketDetailPage() {
               <textarea
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
+                onPaste={handlePaste}
                 placeholder="Napíšte odpoveď klientovi alebo internú poznámku…"
                 rows={4}
                 style={{
@@ -191,6 +269,86 @@ export function TicketDetailPage() {
                   resize: 'vertical',
                 }}
               />
+
+              <div
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  setDragOver(true);
+                }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  setDragOver(false);
+                  if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files);
+                }}
+                style={{
+                  marginTop: 10,
+                  padding: 14,
+                  border: `1.5px dashed ${dragOver ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                  borderRadius: 'var(--radius-md)',
+                  background: dragOver ? 'var(--color-primary-bg)' : 'var(--color-surface-2)',
+                  textAlign: 'center',
+                }}
+              >
+                <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)', marginBottom: 8 }}>
+                  Potiahnite súbory sem alebo vložte screenshot (Ctrl+V)
+                </div>
+                <label
+                  style={{
+                    display: 'inline-block',
+                    padding: '6px 14px',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--color-surface)',
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Vybrať súbory
+                  <input
+                    type="file"
+                    multiple
+                    onChange={(e) => {
+                      if (e.target.files) addFiles(e.target.files);
+                      e.target.value = '';
+                    }}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+
+                {pendingFiles.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10, justifyContent: 'center' }}>
+                    {pendingFiles.map((f, i) => (
+                      <span
+                        key={i}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          fontSize: 12,
+                          padding: '4px 8px',
+                          background: 'var(--color-surface)',
+                          border: '1px solid var(--color-border)',
+                          borderRadius: 'var(--radius-sm)',
+                        }}
+                      >
+                        📎 {f.name}
+                        <button
+                          type="button"
+                          onClick={() => removeFile(i)}
+                          style={{ border: 'none', background: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontWeight: 700 }}
+                        >
+                          ×
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {attachError && <div style={{ color: 'var(--color-danger)', fontSize: 12.5, marginTop: 8 }}>{attachError}</div>}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
                   <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
@@ -198,7 +356,7 @@ export function TicketDetailPage() {
                 </label>
                 <button
                   type="submit"
-                  disabled={sending || !reply.trim()}
+                  disabled={sending || (!reply.trim() && pendingFiles.length === 0)}
                   style={{
                     padding: '9px 18px',
                     background: 'var(--color-primary)',
@@ -206,10 +364,10 @@ export function TicketDetailPage() {
                     border: 'none',
                     borderRadius: 'var(--radius-md)',
                     fontWeight: 700,
-                    opacity: sending || !reply.trim() ? 0.6 : 1,
+                    opacity: sending || (!reply.trim() && pendingFiles.length === 0) ? 0.6 : 1,
                   }}
                 >
-                  Odoslať
+                  {sending ? 'Odosielam…' : 'Odoslať'}
                 </button>
               </div>
             </form>
@@ -247,17 +405,18 @@ export function TicketDetailPage() {
               <InfoField label="Priorita" value={ticket.priority} />
               <InfoField label="Kanál" value={ticket.channel} />
               <InfoField label="Vytvorený" value={fmt(ticket.createdAt)} />
-              <InfoField label="SLA do" value={ticket.slaDueAt ? fmt(ticket.slaDueAt) : '—'} />
             </div>
           </Panel>
 
           <Panel title="Priradenie">
-            <input
-              defaultValue={ticket.assignedTo ?? ''}
-              placeholder="Bez priradenia"
-              onBlur={(e) => handleAssign(e.target.value.trim())}
-              style={selectStyle}
-            />
+            <select value={ticket.assignedTo ?? ''} onChange={(e) => handleAssign(e.target.value)} style={selectStyle}>
+              <option value="">— Bez priradenia —</option>
+              {agents.map((a) => (
+                <option key={a.id} value={a.name}>
+                  {a.name}
+                </option>
+              ))}
+            </select>
           </Panel>
 
           <Panel title="Žiadateľ">

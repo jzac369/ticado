@@ -1,9 +1,9 @@
 import { useMemo, useState, useEffect, type CSSProperties, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { subscribeTickets, isSlaBreached } from '../firebase/tickets';
+import { subscribeTickets } from '../firebase/tickets';
 import type { Ticket, TicketPriority, TicketStatus } from '../types';
 import { PRIORITY_LABELS, STATUS_LABELS } from '../types';
-import { StatusBadge, PriorityBadge, SlaBadge } from '../components/Badges';
+import { StatusBadge, PriorityBadge } from '../components/Badges';
 
 function formatDate(ticket: Ticket, field: 'createdAt' | 'closedAt') {
   const ts = ticket[field];
@@ -82,13 +82,12 @@ export function TicketsListPage() {
   const stats = useMemo(() => {
     const all = tickets.length;
     const open = tickets.filter((t) => t.status !== 'uzavrety').length;
-    const pastSla = tickets.filter(isSlaBreached).length;
     const critical = tickets.filter((t) => t.priority === 'kriticka' && t.status !== 'uzavrety').length;
     const resolved30d = tickets.filter((t) => {
       if (!t.closedAt) return false;
       return t.closedAt.toMillis() > Date.now() - 30 * 24 * 60 * 60 * 1000;
     }).length;
-    return { all, open, pastSla, critical, resolved30d };
+    return { all, open, critical, resolved30d };
   }, [tickets]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -108,25 +107,24 @@ export function TicketsListPage() {
     <div>
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>
-          SLA PRÍPADY
+          TICKETY
         </div>
         <h1 style={{ fontSize: 26, margin: '4px 0 4px' }}>Všetky tickety</h1>
         <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-          Prehľad servisných tiketov, priradenia a plnenia SLA.
+          Prehľad servisných tiketov a priradenia.
         </p>
       </div>
 
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
+          gridTemplateColumns: 'repeat(4, 1fr)',
           gap: 14,
           marginBottom: 20,
         }}
       >
         <StatCard label="Všetky" value={stats.all} icon="🎫" />
         <StatCard label="Otvorené" value={stats.open} icon="⏳" />
-        <StatCard label="Po SLA" value={stats.pastSla} icon="⏰" tone="danger" />
         <StatCard label="Kritické" value={stats.critical} icon="⚠️" tone="warning" />
         <StatCard label="Vyriešené za 30 dní" value={stats.resolved30d} icon="✅" tone="success" />
       </div>
@@ -273,7 +271,7 @@ export function TicketsListPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
-              {['Ticket', 'Predmet a zákazník', 'Stav', 'Priorita', 'Vytvorený', 'Uzavretý', 'SLA', ''].map((h) => (
+              {['Ticket', 'Predmet a zákazník', 'Stav', 'Priorita', 'Vytvorený', 'Uzavretý', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--color-text-faint)' }}>
                   {h}
                 </th>
@@ -283,14 +281,14 @@ export function TicketsListPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   Načítavam tickety…
                 </td>
               </tr>
             )}
             {!loading && paged.length === 0 && (
               <tr>
-                <td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   Žiadne tickety nezodpovedajú filtru.
                 </td>
               </tr>
@@ -316,9 +314,6 @@ export function TicketsListPage() {
                 </td>
                 <td style={{ padding: '12px 14px', color: 'var(--color-text-muted)' }}>{formatDate(t, 'createdAt')}</td>
                 <td style={{ padding: '12px 14px', color: 'var(--color-text-muted)' }}>{formatDate(t, 'closedAt')}</td>
-                <td style={{ padding: '12px 14px' }}>
-                  <SlaBadge breached={isSlaBreached(t)} />
-                </td>
                 <td style={{ padding: '12px 14px', color: 'var(--color-text-faint)' }}>›</td>
               </tr>
             ))}

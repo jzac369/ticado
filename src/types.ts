@@ -65,7 +65,13 @@ export interface Ticket {
   createdAt: Timestamp | null;
   updatedAt: Timestamp | null;
   closedAt: Timestamp | null;
-  slaDueAt: Timestamp | null;
+}
+
+export interface Attachment {
+  name: string;
+  url: string;
+  size: number;
+  contentType: string;
 }
 
 export interface TicketMessage {
@@ -76,6 +82,7 @@ export interface TicketMessage {
   body: string;
   isPrivate: boolean;
   hoursSpent?: number;
+  attachments?: Attachment[];
   createdAt: Timestamp | null;
 }
 

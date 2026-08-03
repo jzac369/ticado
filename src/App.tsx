@@ -10,6 +10,8 @@ import { NewTicketPage } from './pages/NewTicket';
 import { CustomersPage } from './pages/Customers';
 import { CustomerDetailPage } from './pages/CustomerDetail';
 import { NewColleaguePage } from './pages/NewColleague';
+import { AgentsPage } from './pages/Agents';
+import { PublicNewTicketPage } from './pages/PublicNewTicket';
 
 function App() {
   return (
@@ -17,6 +19,7 @@ function App() {
       <AuthProvider>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/support" element={<PublicNewTicketPage />} />
           <Route
             path="/"
             element={
@@ -32,6 +35,7 @@ function App() {
             <Route path="customers" element={<CustomersPage />} />
             <Route path="customers/:id" element={<CustomerDetailPage />} />
             <Route path="customers/:id/colleagues/new" element={<NewColleaguePage />} />
+            <Route path="agents" element={<AgentsPage />} />
           </Route>
         </Routes>
       </AuthProvider>

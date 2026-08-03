@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  subscribeGlobalActivity,
-  subscribeRecentMessages,
-  subscribeTickets,
-  isSlaBreached,
-} from '../firebase/tickets';
+import { subscribeGlobalActivity, subscribeRecentMessages, subscribeTickets } from '../firebase/tickets';
 import type { ActivityEntry, Ticket, TicketMessage, TicketPriority } from '../types';
 import { PRIORITY_LABELS } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/Badges';
@@ -41,35 +36,22 @@ export function DashboardPage() {
   useEffect(() => subscribeGlobalActivity(setActivity, 10), []);
   useEffect(() => subscribeRecentMessages(setMessages, 300), []);
 
-  const now = new Date();
-  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const tomorrowStart = new Date(todayStart.getTime() + DAY_MS);
-  const dayAfterTomorrow = new Date(todayStart.getTime() + 2 * DAY_MS);
-
   const stats = useMemo(() => {
     const open = tickets.filter((t) => t.status !== 'uzavrety');
     const assigned = open.filter((t) => t.assignedTo).length;
     const unassigned = open.length - assigned;
     const waiting = open.filter((t) => t.status === 'caka_na_klienta').length;
-    const pastSla = tickets.filter(isSlaBreached).length;
     const resolved30d = tickets.filter((t) => {
       if (!t.closedAt) return false;
       return t.closedAt.toMillis() > Date.now() - 30 * DAY_MS;
     }).length;
-    const dueToday = open.filter((t) => {
-      const d = t.slaDueAt?.toDate();
-      return d && d >= todayStart && d < tomorrowStart;
-    }).length;
-    const dueTomorrow = open.filter((t) => {
-      const d = t.slaDueAt?.toDate();
-      return d && d >= tomorrowStart && d < dayAfterTomorrow;
-    }).length;
-    return { open: open.length, assigned, unassigned, waiting, pastSla, resolved30d, dueToday, dueTomorrow };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    return { open: open.length, assigned, unassigned, waiting, resolved30d };
   }, [tickets]);
 
   const trend = useMemo(() => {
     const days = 14;
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const buckets = Array.from({ length: days }, (_, i) => {
       const dayStart = todayStart.getTime() - (days - 1 - i) * DAY_MS;
       return { label: dayKey(dayStart), start: dayStart, end: dayStart + DAY_MS, created: 0, resolved: 0 };
@@ -133,17 +115,12 @@ export function DashboardPage() {
         Rýchly prehľad prevádzky ServiceDesku.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 14 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
         <Card label="Nevyriešené" value={stats.open} tone="var(--chart-series-1)" />
         <Card label="Priradené" value={stats.assigned} tone="var(--chart-series-7)" />
         <Card label="Nepriradené" value={stats.unassigned} tone="var(--color-text-faint)" />
         <Card label="Čakajúce na klienta" value={stats.waiting} tone="var(--chart-warning)" />
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
-        <Card label="Po SLA" value={stats.pastSla} tone="var(--chart-critical)" />
         <Card label="Vyriešené za 30 dní" value={stats.resolved30d} tone="var(--chart-good)" />
-        <Card label="Dnes splatné" value={stats.dueToday} tone="var(--chart-series-4)" />
-        <Card label="Zajtra splatné" value={stats.dueTomorrow} tone="var(--chart-series-5)" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 20 }}>

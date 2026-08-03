@@ -9,12 +9,10 @@ import {
   query,
   runTransaction,
   serverTimestamp,
-  Timestamp,
   updateDoc,
-  where,
 } from 'firebase/firestore';
 import { db } from './config';
-import type { Ticket, TicketMessage, TicketPriority, TicketStatus, ActivityEntry } from '../types';
+import type { Attachment, Ticket, TicketMessage, TicketPriority, TicketStatus, ActivityEntry } from '../types';
 
 const ticketsCol = collection(db, 'tickets');
 
@@ -66,19 +64,6 @@ export function subscribeActivity(ticketId: string, callback: (entries: Activity
   });
 }
 
-function slaHoursForPriority(priority: TicketPriority): number {
-  switch (priority) {
-    case 'kriticka':
-      return 4;
-    case 'vysoka':
-      return 8;
-    case 'normalna':
-      return 24;
-    case 'nizka':
-      return 72;
-  }
-}
-
 async function nextTicketCode(): Promise<string> {
   const counterRef = doc(db, 'meta', 'ticketCounter');
   const nextNumber = await runTransaction(db, async (tx) => {
@@ -105,8 +90,6 @@ export interface NewTicketInput {
 
 export async function createTicket(input: NewTicketInput) {
   const code = await nextTicketCode();
-  const slaHours = slaHoursForPriority(input.priority);
-  const slaDueAt = Timestamp.fromMillis(Date.now() + slaHours * 60 * 60 * 1000);
 
   const docRef = await addDoc(ticketsCol, {
     code,
@@ -124,7 +107,6 @@ export async function createTicket(input: NewTicketInput) {
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     closedAt: null,
-    slaDueAt,
   });
 
   await addDoc(collection(db, 'tickets', docRef.id, 'messages'), {
@@ -174,11 +156,23 @@ export async function updateTicketAssignment(ticketId: string, assignedTo: strin
 
 export async function addTicketMessage(
   ticketId: string,
-  message: { authorName: string; authorEmail?: string; body: string; isPrivate: boolean; hoursSpent?: number },
+  message: {
+    authorName: string;
+    authorEmail?: string;
+    body: string;
+    isPrivate: boolean;
+    hoursSpent?: number;
+    attachments?: Attachment[];
+  },
 ) {
   await addDoc(collection(db, 'tickets', ticketId, 'messages'), {
     ticketId,
-    ...message,
+    authorName: message.authorName,
+    authorEmail: message.authorEmail ?? '',
+    body: message.body,
+    isPrivate: message.isPrivate,
+    ...(message.hoursSpent !== undefined ? { hoursSpent: message.hoursSpent } : {}),
+    ...(message.attachments !== undefined ? { attachments: message.attachments } : {}),
     createdAt: serverTimestamp(),
   });
   await updateDoc(doc(db, 'tickets', ticketId), { updatedAt: serverTimestamp() });
@@ -190,10 +184,3 @@ export async function addTicketMessage(
   });
 }
 
-export function isSlaBreached(ticket: Ticket): boolean {
-  if (ticket.status === 'uzavrety') return false;
-  if (!ticket.slaDueAt) return false;
-  return ticket.slaDueAt.toMillis() < Date.now();
-}
-
-export { where };

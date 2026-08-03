@@ -18,6 +18,10 @@ const groups: NavGroup[] = [
     title: 'Zákazníci',
     items: [{ label: 'Zoznam zákazníkov', to: '/customers' }],
   },
+  {
+    title: 'Nastavenia',
+    items: [{ label: 'IT technici', to: '/agents' }],
+  },
 ];
 
 export function Sidebar() {
