@@ -156,3 +156,17 @@ a {
   background: var(--color-border);
   border-radius: 8px;
 }
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body,
+  main {
+    overflow: visible !important;
+    height: auto !important;
+  }
+  main {
+    padding: 0 !important;
+  }
+}

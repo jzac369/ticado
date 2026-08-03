@@ -4,6 +4,7 @@ import { subscribeCustomers } from '../firebase/customers';
 import type { Customer, TicketPriority } from '../types';
 import { PRIORITY_LABELS } from '../types';
 import { Logo } from '../components/Logo';
+import { AnnouncementBanner } from '../components/AnnouncementBanner';
 
 const CATEGORIES = ['Infra', 'Security', 'Sieť', 'Backup', 'Aplikácie', 'Hardvér', 'Iné'];
 
@@ -125,6 +126,7 @@ export function PublicNewTicketPage() {
       </div>
 
       <div style={{ width: '100%', maxWidth: 640 }}>
+        <AnnouncementBanner />
         {createdCode ? (
           <div
             style={{

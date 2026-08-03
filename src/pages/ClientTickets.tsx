@@ -4,6 +4,7 @@ import { collection, onSnapshot, orderBy, query, where } from 'firebase/firestor
 import { db } from '../firebase/config';
 import type { Ticket } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/Badges';
+import { AnnouncementBanner } from '../components/AnnouncementBanner';
 
 export function ClientTicketsPage({ customerId, customerName }: { customerId: string; customerName: string }) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -18,6 +19,7 @@ export function ClientTicketsPage({ customerId, customerName }: { customerId: st
 
   return (
     <div>
+      <AnnouncementBanner />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
         <div>
           <h1 style={{ fontSize: 24, margin: '0 0 4px' }}>Moje tickety</h1>

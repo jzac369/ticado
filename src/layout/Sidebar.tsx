@@ -24,6 +24,8 @@ const agentGroups: NavGroup[] = [
     items: [
       { label: 'IT technici', to: '/agents' },
       { label: 'Šablóny odpovedí', to: '/templates' },
+      { label: 'Banner pre klientov', to: '/announcement' },
+      { label: 'Analytika technikov', to: '/analytics' },
     ],
   },
 ];
@@ -43,6 +45,7 @@ export function Sidebar() {
 
   return (
     <aside
+      className="no-print"
       style={{
         width: 240,
         flexShrink: 0,

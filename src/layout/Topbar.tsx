@@ -34,6 +34,7 @@ export function Topbar() {
 
   return (
     <header
+      className="no-print"
       style={{
         height: 60,
         flexShrink: 0,

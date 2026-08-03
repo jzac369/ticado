@@ -15,6 +15,8 @@ import { AgentsPage } from './pages/Agents';
 import { PublicNewTicketPage } from './pages/PublicNewTicket';
 import { LegendPage } from './pages/Legend';
 import { TemplatesPage } from './pages/Templates';
+import { AnnouncementSettingsPage } from './pages/AnnouncementSettings';
+import { AnalyticsPage } from './pages/Analytics';
 
 function App() {
   return (
@@ -79,6 +81,22 @@ function App() {
               element={
                 <AgentOnlyRoute>
                   <TemplatesPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="announcement"
+              element={
+                <AgentOnlyRoute>
+                  <AnnouncementSettingsPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="analytics"
+              element={
+                <AgentOnlyRoute>
+                  <AnalyticsPage />
                 </AgentOnlyRoute>
               }
             />

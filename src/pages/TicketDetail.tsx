@@ -16,6 +16,7 @@ import { PriorityBadge, StatusBadge } from '../components/Badges';
 import { subscribeAgents, type Agent } from '../firebase/agents';
 import { uploadAttachments } from '../firebase/attachments';
 import { subscribeTemplates, type ReplyTemplate } from '../firebase/templates';
+import { TicketTimeline } from '../components/TicketTimeline';
 
 function fmt(ts: TicketMessage['createdAt']) {
   if (!ts) return '';
@@ -202,11 +203,27 @@ export function TicketDetailPage() {
 
   return (
     <div>
-      <div style={{ fontSize: 13, marginBottom: 12 }}>
-        <Link to="/tickets" style={{ color: 'var(--color-text-muted)' }}>
-          Tickety
-        </Link>{' '}
-        / <span style={{ fontWeight: 700 }}>{ticket.code}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+        <div style={{ fontSize: 13 }}>
+          <Link to="/tickets" style={{ color: 'var(--color-text-muted)' }}>
+            Tickety
+          </Link>{' '}
+          / <span style={{ fontWeight: 700 }}>{ticket.code}</span>
+        </div>
+        <button
+          onClick={() => window.print()}
+          className="no-print"
+          style={{
+            padding: '7px 14px',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--color-surface)',
+            fontSize: 12.5,
+            fontWeight: 600,
+          }}
+        >
+          🖨 Tlačiť / PDF
+        </button>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
@@ -292,7 +309,7 @@ export function TicketDetailPage() {
           </div>
 
           {!closed ? (
-            <form onSubmit={handleReply} style={{ marginTop: 20 }}>
+            <form onSubmit={handleReply} className="no-print" style={{ marginTop: 20 }}>
               {!isClient && templates.length > 0 && (
                 <div style={{ position: 'relative', marginBottom: 8 }}>
                   <button
@@ -535,6 +552,7 @@ export function TicketDetailPage() {
           </Panel>
 
           {!isClient && (
+            <div className="no-print">
             <Panel title="Priradenie">
               <select value={ticket.assignedTo ?? ''} onChange={(e) => handleAssign(e.target.value)} style={selectStyle}>
                 <option value="">— Bez priradenia —</option>
@@ -545,9 +563,11 @@ export function TicketDetailPage() {
                 ))}
               </select>
             </Panel>
+            </div>
           )}
 
           {!isClient && (
+          <div className="no-print">
           <Panel title="Štítky">
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: (ticket.tags?.length ?? 0) > 0 ? 10 : 0 }}>
               {(ticket.tags ?? []).map((tag) => (
@@ -596,6 +616,7 @@ export function TicketDetailPage() {
               </button>
             </form>
           </Panel>
+          </div>
           )}
 
           <Panel title="Žiadateľ">
@@ -628,18 +649,8 @@ export function TicketDetailPage() {
             </div>
           </Panel>
 
-          <Panel title="Posledná aktivita">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {activity.slice(0, 8).map((a) => (
-                <div key={a.id} style={{ fontSize: 12.5 }}>
-                  <div>{a.text}</div>
-                  <div style={{ color: 'var(--color-text-faint)' }}>
-                    {a.actor} · {fmt(a.createdAt)}
-                  </div>
-                </div>
-              ))}
-              {activity.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)' }}>Žiadna aktivita.</div>}
-            </div>
+          <Panel title="Časová os zmien">
+            <TicketTimeline entries={activity.slice(0, 12)} />
           </Panel>
         </div>
       </div>

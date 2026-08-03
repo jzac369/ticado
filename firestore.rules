@@ -79,6 +79,13 @@ service cloud.firestore {
       allow read, write: if isAgent();
     }
 
+    // Public maintenance/outage announcement banner - shown to anyone
+    // (clients and the public intake form), editable only by agents.
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAgent();
+    }
+
     // The ticket-number counter must be readable/incrementable by the
     // public intake form too, but only as a same-document +1 increment.
     // The round-robin assignment counter (assignmentRR) is only ever
