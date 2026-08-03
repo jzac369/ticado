@@ -225,5 +225,5 @@ const actionBtnBase = {
 
 const editBtnStyle = { ...actionBtnBase };
 const cancelBtnStyle = { ...actionBtnBase };
-const saveBtnStyle = { ...actionBtnBase, background: 'var(--color-primary)', color: '#fff', borderColor: 'var(--color-primary)' };
-const deleteBtnStyle = { ...actionBtnBase, color: 'var(--color-danger)', borderColor: 'var(--color-danger)' };
+const saveBtnStyle = { ...actionBtnBase, background: 'var(--color-primary)', color: '#fff', border: '1px solid var(--color-primary)' };
+const deleteBtnStyle = { ...actionBtnBase, color: 'var(--color-danger)', border: '1px solid var(--color-danger)' };

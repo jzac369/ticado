@@ -30,6 +30,8 @@ export function AlertTicker() {
     const unassigned = open.filter((t) => !t.assignedTo).length;
     const critical = open.filter((t) => t.priority === 'kriticka').length;
     const waiting = open.filter((t) => t.status === 'caka_na_klienta').length;
+    const staleSince = Date.now() - 24 * 60 * 60 * 1000;
+    const stale = open.filter((t) => (t.updatedAt?.toMillis() ?? t.createdAt?.toMillis() ?? 0) < staleSince).length;
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const createdToday = tickets.filter((t) => (t.createdAt?.toMillis() ?? 0) >= todayStart.getTime()).length;
@@ -52,6 +54,13 @@ export function AlertTicker() {
     }
     if (waiting > 0) {
       msgs.push({ text: `⏳ ${waiting} ${waiting === 1 ? 'ticket čaká' : 'ticketov čaká'} na odpoveď klienta`, tone: 'info', to: '/tickets' });
+    }
+    if (stale > 0) {
+      msgs.push({
+        text: `🕒 ${stale} ${stale === 1 ? 'ticket nemá' : 'ticketov nemá'} aktivitu viac ako 24 hodín`,
+        tone: 'warning',
+        to: '/tickets',
+      });
     }
     if (createdToday > 0) {
       msgs.push({ text: `📥 Dnes pribudlo ${createdToday} nových ticketov`, tone: 'info' });

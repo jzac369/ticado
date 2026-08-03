@@ -16,7 +16,8 @@ const priorityMeta: Record<TicketPriority, { hint: string }> = {
 };
 
 export function NewTicketPage() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isClient = profile?.role === 'klient';
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
@@ -47,10 +48,11 @@ export function NewTicketPage() {
     }
     setSubmitting(true);
     try {
-      let finalCustomerId = customerId;
-      let finalCustomerName = customers.find((c) => c.id === customerId)?.name ?? '';
+      let finalCustomerId = isClient && profile?.role === 'klient' ? profile.customerId : customerId;
+      let finalCustomerName =
+        isClient && profile?.role === 'klient' ? profile.customerName : customers.find((c) => c.id === customerId)?.name ?? '';
 
-      if (!finalCustomerId && newCustomerName.trim()) {
+      if (!isClient && !finalCustomerId && newCustomerName.trim()) {
         const ref = await createCustomer({ name: newCustomerName.trim() });
         finalCustomerId = ref.id;
         finalCustomerName = newCustomerName.trim();
@@ -66,6 +68,7 @@ export function NewTicketPage() {
         category: category || 'Iné',
         priority,
         channel: 'web',
+        autoAssign: !isClient,
       });
       navigate(`/tickets/${id}`);
     } catch (err) {
@@ -88,25 +91,31 @@ export function NewTicketPage() {
         <Section title="1. Klasifikácia" subtitle="Základné zaradenie a zodpovednosť.">
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
             <Field label="Zákazník">
-              <select
-                value={customerId}
-                onChange={(e) => setCustomerId(e.target.value)}
-                style={inputStyle}
-              >
-                <option value="">— Nový zákazník —</option>
-                {customers.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              {!customerId && (
-                <input
-                  value={newCustomerName}
-                  onChange={(e) => setNewCustomerName(e.target.value)}
-                  placeholder="Názov nového zákazníka"
-                  style={{ ...inputStyle, marginTop: 8 }}
-                />
+              {isClient && profile?.role === 'klient' ? (
+                <input value={profile.customerName} disabled style={{ ...inputStyle, color: 'var(--color-text-faint)' }} />
+              ) : (
+                <>
+                  <select
+                    value={customerId}
+                    onChange={(e) => setCustomerId(e.target.value)}
+                    style={inputStyle}
+                  >
+                    <option value="">— Nový zákazník —</option>
+                    {customers.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  {!customerId && (
+                    <input
+                      value={newCustomerName}
+                      onChange={(e) => setNewCustomerName(e.target.value)}
+                      placeholder="Názov nového zákazníka"
+                      style={{ ...inputStyle, marginTop: 8 }}
+                    />
+                  )}
+                </>
               )}
             </Field>
             <Field label="Kategória">

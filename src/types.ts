@@ -63,6 +63,7 @@ export interface Ticket {
   status: TicketStatus;
   channel: TicketChannel;
   assignedTo: string | null;
+  tags?: string[];
   createdAt: Timestamp | null;
   updatedAt: Timestamp | null;
   closedAt: Timestamp | null;

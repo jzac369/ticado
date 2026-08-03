@@ -3,6 +3,7 @@ import {
   collection,
   collectionGroup,
   doc,
+  getDocs,
   limit,
   onSnapshot,
   orderBy,
@@ -10,6 +11,7 @@ import {
   runTransaction,
   serverTimestamp,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 import { db } from './config';
 import { uploadAttachments } from './attachments';
@@ -77,6 +79,22 @@ async function nextTicketCode(): Promise<string> {
   return `TKT${String(nextNumber).padStart(6, '0')}`;
 }
 
+async function nextRoundRobinAgent(): Promise<string | null> {
+  const agentsSnap = await getDocs(query(collection(db, 'agents'), where('active', '==', true), orderBy('name', 'asc')));
+  const names = agentsSnap.docs.map((d) => d.data().name as string);
+  if (names.length === 0) return null;
+
+  const counterRef = doc(db, 'meta', 'assignmentRR');
+  const index = await runTransaction(db, async (tx) => {
+    const snap = await tx.get(counterRef);
+    const current = snap.exists() ? (snap.data().value as number) : -1;
+    const next = current + 1;
+    tx.set(counterRef, { value: next }, { merge: true });
+    return next;
+  });
+  return names[index % names.length];
+}
+
 export interface NewTicketInput {
   subject: string;
   description: string;
@@ -89,10 +107,15 @@ export interface NewTicketInput {
   priority: TicketPriority;
   channel: Ticket['channel'];
   files?: File[];
+  /** Round-robin auto-assign to an active technician. Only used for the
+   * authenticated internal flow - the public intake form always leaves
+   * tickets unassigned. */
+  autoAssign?: boolean;
 }
 
 export async function createTicket(input: NewTicketInput) {
   const code = await nextTicketCode();
+  const assignedTo = input.autoAssign ? await nextRoundRobinAgent() : null;
 
   const docRef = await addDoc(ticketsCol, {
     code,
@@ -107,11 +130,20 @@ export async function createTicket(input: NewTicketInput) {
     priority: input.priority,
     status: 'otvoreny' as TicketStatus,
     channel: input.channel,
-    assignedTo: null,
+    assignedTo,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
     closedAt: null,
   });
+
+  if (assignedTo) {
+    await addDoc(collection(db, 'tickets', docRef.id, 'activity'), {
+      ticketId: docRef.id,
+      text: `Automaticky priradené: ${assignedTo}`,
+      actor: 'Systém',
+      createdAt: serverTimestamp(),
+    });
+  }
 
   const attachments =
     input.files && input.files.length > 0 ? await uploadAttachments(docRef.id, input.files) : undefined;
@@ -160,6 +192,10 @@ export async function updateTicketAssignment(ticketId: string, assignedTo: strin
     actor,
     createdAt: serverTimestamp(),
   });
+}
+
+export async function updateTicketTags(ticketId: string, tags: string[]) {
+  await updateDoc(doc(db, 'tickets', ticketId), { tags, updatedAt: serverTimestamp() });
 }
 
 export async function addTicketMessage(

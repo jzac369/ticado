@@ -1,6 +1,6 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { createTicket } from '../firebase/tickets';
-import { subscribeCustomers, createCustomer } from '../firebase/customers';
+import { subscribeCustomers } from '../firebase/customers';
 import type { Customer, TicketPriority } from '../types';
 import { PRIORITY_LABELS } from '../types';
 import { Logo } from '../components/Logo';
@@ -10,7 +10,6 @@ const CATEGORIES = ['Infra', 'Security', 'Sieť', 'Backup', 'Aplikácie', 'Hardv
 function emptyForm() {
   return {
     customerId: '',
-    newCompanyName: '',
     department: '',
     category: '',
     priority: 'normalna' as TicketPriority,
@@ -76,21 +75,15 @@ export function PublicNewTicketPage() {
       setError('Zadajte platnú emailovú adresu, na ktorú vám odpovieme.');
       return;
     }
-    if (!form.customerId && !form.newCompanyName.trim()) {
-      setError('Vyberte alebo zadajte názov vašej firmy.');
+    if (!form.customerId) {
+      setError('Vyberte vašu firmu zo zoznamu.');
       return;
     }
 
     setSubmitting(true);
     try {
-      let customerId = form.customerId;
-      let customerName = customers.find((c) => c.id === form.customerId)?.name ?? '';
-
-      if (!customerId && form.newCompanyName.trim()) {
-        const ref = await createCustomer({ name: form.newCompanyName.trim() });
-        customerId = ref.id;
-        customerName = form.newCompanyName.trim();
-      }
+      const customerId = form.customerId;
+      const customerName = customers.find((c) => c.id === form.customerId)?.name ?? '';
 
       const { code } = await createTicket({
         subject: form.subject.trim(),
@@ -193,21 +186,13 @@ export function PublicNewTicketPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 14 }}>
                 <Field label="Názov firmy *">
                   <select value={form.customerId} onChange={(e) => set('customerId', e.target.value)} style={inputStyle}>
-                    <option value="">— Zadať novú firmu —</option>
+                    <option value="">— Vybrať firmu —</option>
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
                       </option>
                     ))}
                   </select>
-                  {!form.customerId && (
-                    <input
-                      value={form.newCompanyName}
-                      onChange={(e) => set('newCompanyName', e.target.value)}
-                      placeholder="Názov vašej firmy"
-                      style={{ ...inputStyle, marginTop: 8 }}
-                    />
-                  )}
                 </Field>
                 <Field label="Vaše oddelenie">
                   <input

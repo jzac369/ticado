@@ -7,6 +7,7 @@ import {
   subscribeTicket,
   updateTicketAssignment,
   updateTicketStatus,
+  updateTicketTags,
 } from '../firebase/tickets';
 import type { ActivityEntry, Attachment, Ticket, TicketMessage, TicketStatus } from '../types';
 import { STATUS_LABELS } from '../types';
@@ -14,6 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { PriorityBadge, StatusBadge } from '../components/Badges';
 import { subscribeAgents, type Agent } from '../firebase/agents';
 import { uploadAttachments } from '../firebase/attachments';
+import { subscribeTemplates, type ReplyTemplate } from '../firebase/templates';
 
 function fmt(ts: TicketMessage['createdAt']) {
   if (!ts) return '';
@@ -73,19 +75,30 @@ function AttachmentList({ attachments }: { attachments?: Attachment[] }) {
 
 export function TicketDetailPage() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const isClient = profile?.role === 'klient';
   const [ticket, setTicket] = useState<Ticket | null | undefined>(undefined);
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [templates, setTemplates] = useState<ReplyTemplate[]>([]);
+  const [templateMenuOpen, setTemplateMenuOpen] = useState(false);
   const [reply, setReply] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [sending, setSending] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
+  const [tagInput, setTagInput] = useState('');
   const [attachError, setAttachError] = useState<string | null>(null);
 
-  useEffect(() => subscribeAgents(setAgents), []);
+  useEffect(() => {
+    if (isClient) return;
+    return subscribeAgents(setAgents);
+  }, [isClient]);
+  useEffect(() => {
+    if (isClient) return;
+    return subscribeTemplates(setTemplates);
+  }, [isClient]);
 
   useEffect(() => {
     if (!id) return;
@@ -105,8 +118,16 @@ export function TicketDetailPage() {
   if (ticket === null || !id) {
     return <div>Ticket nebol nájdený. <Link to="/tickets">Späť na tickety</Link></div>;
   }
+  if (isClient && profile?.role === 'klient' && ticket.customerId !== profile.customerId) {
+    return (
+      <div>
+        Nemáte prístup k tomuto tiketu. <Link to="/">Späť na moje tickety</Link>
+      </div>
+    );
+  }
 
   const actorName = user?.email ?? 'Agent';
+  const visibleMessages = isClient ? messages.filter((m) => !m.isPrivate) : messages;
 
   async function handleReply(e: FormEvent) {
     e.preventDefault();
@@ -160,6 +181,23 @@ export function TicketDetailPage() {
     await updateTicketAssignment(id, value || null, actorName);
   }
 
+  const currentTags = ticket.tags ?? [];
+
+  async function handleAddTag(e: FormEvent) {
+    e.preventDefault();
+    const tag = tagInput.trim();
+    if (!tag || !id) return;
+    if (!currentTags.includes(tag)) {
+      await updateTicketTags(id, [...currentTags, tag]);
+    }
+    setTagInput('');
+  }
+
+  async function removeTag(tag: string) {
+    if (!id) return;
+    await updateTicketTags(id, currentTags.filter((t) => t !== tag));
+  }
+
   const closed = ticket.status === 'uzavrety';
 
   return (
@@ -192,11 +230,11 @@ export function TicketDetailPage() {
         >
           <div style={{ fontWeight: 700, marginBottom: 4 }}>Komunikácia</div>
           <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)', marginBottom: 16 }}>
-            {messages.length} správ a poznámok v tickete
+            {visibleMessages.length} správ a poznámok v tickete
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {messages.map((m) => (
+            {visibleMessages.map((m) => (
               <div
                 key={m.id}
                 style={{
@@ -248,13 +286,76 @@ export function TicketDetailPage() {
                 <AttachmentList attachments={m.attachments} />
               </div>
             ))}
-            {messages.length === 0 && (
+            {visibleMessages.length === 0 && (
               <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Zatiaľ žiadna komunikácia.</div>
             )}
           </div>
 
           {!closed ? (
             <form onSubmit={handleReply} style={{ marginTop: 20 }}>
+              {!isClient && templates.length > 0 && (
+                <div style={{ position: 'relative', marginBottom: 8 }}>
+                  <button
+                    type="button"
+                    onClick={() => setTemplateMenuOpen((v) => !v)}
+                    style={{
+                      padding: '6px 12px',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-md)',
+                      background: 'var(--color-surface-2)',
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    📋 Šablóny odpovedí ▾
+                  </button>
+                  {templateMenuOpen && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '110%',
+                        left: 0,
+                        zIndex: 15,
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)',
+                        boxShadow: 'var(--shadow-md)',
+                        minWidth: 260,
+                        maxHeight: 240,
+                        overflowY: 'auto',
+                      }}
+                    >
+                      {templates.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => {
+                            setReply((r) => (r ? `${r}\n${t.body}` : t.body));
+                            setTemplateMenuOpen(false);
+                          }}
+                          style={{
+                            display: 'block',
+                            width: '100%',
+                            textAlign: 'left',
+                            padding: '9px 12px',
+                            border: 'none',
+                            borderBottom: '1px solid var(--color-border)',
+                            background: 'none',
+                            fontSize: 12.5,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <div style={{ fontWeight: 700 }}>{t.title}</div>
+                          <div style={{ color: 'var(--color-text-faint)', fontSize: 11.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {t.body}
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
               <textarea
                 value={reply}
                 onChange={(e) => setReply(e.target.value)}
@@ -365,10 +466,14 @@ export function TicketDetailPage() {
               )}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-                <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
-                  <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
-                  Privátna poznámka (nevidí klient)
-                </label>
+                {!isClient ? (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
+                    <input type="checkbox" checked={isPrivate} onChange={(e) => setIsPrivate(e.target.checked)} />
+                    Privátna poznámka (nevidí klient)
+                  </label>
+                ) : (
+                  <span />
+                )}
                 <button
                   type="submit"
                   disabled={sending || (!reply.trim() && pendingFiles.length === 0)}
@@ -404,17 +509,23 @@ export function TicketDetailPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <Panel title="Stav ticketu">
-            <select
-              value={ticket.status}
-              onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
-              style={selectStyle}
-            >
-              {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
+            {isClient ? (
+              <div style={{ padding: '9px 10px', background: 'var(--color-surface-2)', borderRadius: 'var(--radius-md)', fontWeight: 600, fontSize: 13.5 }}>
+                {STATUS_LABELS[ticket.status]}
+              </div>
+            ) : (
+              <select
+                value={ticket.status}
+                onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
+                style={selectStyle}
+              >
+                {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            )}
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 14 }}>
               <InfoField label="Priorita" value={ticket.priority} />
@@ -423,16 +534,69 @@ export function TicketDetailPage() {
             </div>
           </Panel>
 
-          <Panel title="Priradenie">
-            <select value={ticket.assignedTo ?? ''} onChange={(e) => handleAssign(e.target.value)} style={selectStyle}>
-              <option value="">— Bez priradenia —</option>
-              {agents.map((a) => (
-                <option key={a.id} value={a.name}>
-                  {a.name}
-                </option>
+          {!isClient && (
+            <Panel title="Priradenie">
+              <select value={ticket.assignedTo ?? ''} onChange={(e) => handleAssign(e.target.value)} style={selectStyle}>
+                <option value="">— Bez priradenia —</option>
+                {agents.map((a) => (
+                  <option key={a.id} value={a.name}>
+                    {a.name}
+                  </option>
+                ))}
+              </select>
+            </Panel>
+          )}
+
+          {!isClient && (
+          <Panel title="Štítky">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: (ticket.tags?.length ?? 0) > 0 ? 10 : 0 }}>
+              {(ticket.tags ?? []).map((tag) => (
+                <span
+                  key={tag}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    fontSize: 12,
+                    fontWeight: 600,
+                    padding: '3px 8px',
+                    borderRadius: 999,
+                    background: 'var(--color-primary-bg)',
+                    color: 'var(--color-primary)',
+                  }}
+                >
+                  {tag}
+                  <button
+                    onClick={() => removeTag(tag)}
+                    style={{ border: 'none', background: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 700, padding: 0 }}
+                  >
+                    ×
+                  </button>
+                </span>
               ))}
-            </select>
+            </div>
+            <form onSubmit={handleAddTag} style={{ display: 'flex', gap: 6 }}>
+              <input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                placeholder="Nový štítok…"
+                style={{ ...selectStyle, flex: 1 }}
+              />
+              <button
+                type="submit"
+                style={{
+                  padding: '0 12px',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  background: 'var(--color-surface-2)',
+                  fontWeight: 700,
+                }}
+              >
+                +
+              </button>
+            </form>
           </Panel>
+          )}
 
           <Panel title="Žiadateľ">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

@@ -1,6 +1,7 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { AgentOnlyRoute } from './components/AgentOnlyRoute';
 import { AppLayout } from './layout/AppLayout';
 import { LoginPage } from './pages/Login';
 import { DashboardPage } from './pages/Dashboard';
@@ -12,6 +13,8 @@ import { CustomerDetailPage } from './pages/CustomerDetail';
 import { NewColleaguePage } from './pages/NewColleague';
 import { AgentsPage } from './pages/Agents';
 import { PublicNewTicketPage } from './pages/PublicNewTicket';
+import { LegendPage } from './pages/Legend';
+import { TemplatesPage } from './pages/Templates';
 
 function App() {
   return (
@@ -29,13 +32,57 @@ function App() {
             }
           >
             <Route index element={<DashboardPage />} />
-            <Route path="tickets" element={<TicketsListPage />} />
+            <Route
+              path="tickets"
+              element={
+                <AgentOnlyRoute>
+                  <TicketsListPage />
+                </AgentOnlyRoute>
+              }
+            />
             <Route path="tickets/new" element={<NewTicketPage />} />
             <Route path="tickets/:id" element={<TicketDetailPage />} />
-            <Route path="customers" element={<CustomersPage />} />
-            <Route path="customers/:id" element={<CustomerDetailPage />} />
-            <Route path="customers/:id/colleagues/new" element={<NewColleaguePage />} />
-            <Route path="agents" element={<AgentsPage />} />
+            <Route
+              path="customers"
+              element={
+                <AgentOnlyRoute>
+                  <CustomersPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="customers/:id"
+              element={
+                <AgentOnlyRoute>
+                  <CustomerDetailPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="customers/:id/colleagues/new"
+              element={
+                <AgentOnlyRoute>
+                  <NewColleaguePage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="agents"
+              element={
+                <AgentOnlyRoute>
+                  <AgentsPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="templates"
+              element={
+                <AgentOnlyRoute>
+                  <TemplatesPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route path="legend" element={<LegendPage />} />
           </Route>
         </Routes>
       </AuthProvider>

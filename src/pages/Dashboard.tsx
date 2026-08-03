@@ -7,6 +7,8 @@ import { StatusBadge, PriorityBadge } from '../components/Badges';
 import { LineAreaChart } from '../components/charts/LineAreaChart';
 import { DonutChart } from '../components/charts/DonutChart';
 import { RankBarList } from '../components/charts/RankBarList';
+import { useAuth } from '../contexts/AuthContext';
+import { ClientTicketsPage } from './ClientTickets';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -27,6 +29,7 @@ const priorityRamp: Record<TicketPriority, string> = {
 };
 
 export function DashboardPage() {
+  const { profile } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [messages, setMessages] = useState<TicketMessage[]>([]);
@@ -108,6 +111,10 @@ export function DashboardPage() {
 
   const recent = tickets.slice(0, 6);
 
+  if (profile?.role === 'klient') {
+    return <ClientTicketsPage customerId={profile.customerId} customerName={profile.customerName} />;
+  }
+
   return (
     <div>
       <h1 style={{ fontSize: 24, margin: '0 0 4px' }}>Dashboard</h1>
@@ -115,7 +122,7 @@ export function DashboardPage() {
         Rýchly prehľad prevádzky ServiceDesku.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 14, marginBottom: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 14 }}>
         <Card label="Nevyriešené" value={stats.open} tone="var(--chart-series-1)" />
         <Card label="Priradené" value={stats.assigned} tone="var(--chart-series-7)" />
         <Card label="Nepriradené" value={stats.unassigned} tone="var(--color-text-faint)" />
@@ -123,7 +130,7 @@ export function DashboardPage() {
         <Card label="Vyriešené za 30 dní" value={stats.resolved30d} tone="var(--chart-good)" />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 20, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 12, marginBottom: 12 }}>
         <Panel title="Vývoj ticketov" subtitle="Posledných 14 dní">
           <LineAreaChart
             categories={trend.map((b) => b.label)}
@@ -131,15 +138,16 @@ export function DashboardPage() {
               { key: 'created', label: 'Vytvorené', color: 'var(--chart-series-1)', values: trend.map((b) => b.created) },
               { key: 'resolved', label: 'Vyriešené', color: 'var(--chart-series-2)', values: trend.map((b) => b.resolved) },
             ]}
+            height={110}
           />
         </Panel>
 
         <Panel title="Otvorené podľa priority" subtitle="Aktuálny stav">
-          <DonutChart data={priorityDonut} />
+          <DonutChart data={priorityDonut} size={80} />
         </Panel>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
         <Panel title="Najviac otvorených" subtitle="Podľa zákazníka">
           <RankBarList items={topFirms} color="var(--chart-series-1)" />
         </Panel>
@@ -149,23 +157,23 @@ export function DashboardPage() {
         </Panel>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <Panel title="Posledná aktivita" subtitle="Naprieč všetkými ticketmi">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 150, overflowY: 'auto' }}>
             {activity.map((a) => (
-              <div key={a.id} style={{ fontSize: 12.5 }}>
+              <div key={a.id} style={{ fontSize: 12 }}>
                 <div>{a.text}</div>
-                <div style={{ color: 'var(--color-text-faint)' }}>
+                <div style={{ color: 'var(--color-text-faint)', fontSize: 11 }}>
                   {a.actor} · {fmtActivity(a.createdAt)}
                 </div>
               </div>
             ))}
-            {activity.length === 0 && <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)' }}>Žiadna aktivita.</div>}
+            {activity.length === 0 && <div style={{ fontSize: 12, color: 'var(--color-text-faint)' }}>Žiadna aktivita.</div>}
           </div>
         </Panel>
 
         <Panel title="Najnovšie tickety" subtitle="Posledných 6">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 150, overflowY: 'auto' }}>
             {recent.map((t) => (
               <div
                 key={t.id}
@@ -174,34 +182,34 @@ export function DashboardPage() {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  padding: 10,
-                  borderRadius: 'var(--radius-md)',
+                  padding: 6,
+                  borderRadius: 'var(--radius-sm)',
                   background: 'var(--color-surface-2)',
                   cursor: 'pointer',
                 }}
               >
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 12.5, color: 'var(--color-primary)' }}>{t.code}</div>
-                  <div style={{ fontSize: 13 }}>{t.subject}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--color-text-faint)' }}>{t.customerName}</div>
+                  <div style={{ fontWeight: 700, fontSize: 11.5, color: 'var(--color-primary)' }}>{t.code}</div>
+                  <div style={{ fontSize: 12 }}>{t.subject}</div>
+                  <div style={{ fontSize: 10.5, color: 'var(--color-text-faint)' }}>{t.customerName}</div>
                 </div>
-                <div style={{ display: 'flex', gap: 6 }}>
+                <div style={{ display: 'flex', gap: 4 }}>
                   <PriorityBadge priority={t.priority} />
                   <StatusBadge status={t.status} />
                 </div>
               </div>
             ))}
-            {recent.length === 0 && <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Zatiaľ žiadne tickety.</div>}
+            {recent.length === 0 && <div style={{ color: 'var(--color-text-muted)', fontSize: 12 }}>Zatiaľ žiadne tickety.</div>}
           </div>
           <button
             onClick={() => navigate('/tickets')}
             style={{
-              marginTop: 12,
+              marginTop: 8,
               background: 'none',
               border: 'none',
               color: 'var(--color-primary)',
               fontWeight: 600,
-              fontSize: 12.5,
+              fontSize: 11.5,
               padding: 0,
             }}
           >
@@ -219,12 +227,12 @@ function Card({ label, value, tone }: { label: string; value: number; tone: stri
       style={{
         background: 'var(--color-surface)',
         border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: '16px 18px',
+        borderRadius: 'var(--radius-md)',
+        padding: '10px 12px',
       }}
     >
-      <div style={{ fontSize: 11.5, color: 'var(--color-text-faint)', fontWeight: 600, marginBottom: 6 }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: tone }}>{value}</div>
+      <div style={{ fontSize: 10.5, color: 'var(--color-text-faint)', fontWeight: 600, marginBottom: 3 }}>{label}</div>
+      <div style={{ fontSize: 18, fontWeight: 700, color: tone }}>{value}</div>
     </div>
   );
 }
@@ -235,13 +243,13 @@ function Panel({ title, subtitle, children }: { title: string; subtitle: string;
       style={{
         background: 'var(--color-surface)',
         border: '1px solid var(--color-border)',
-        borderRadius: 'var(--radius-lg)',
-        padding: 20,
+        borderRadius: 'var(--radius-md)',
+        padding: 12,
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 16 }}>
-        <div style={{ fontWeight: 700, fontSize: 14.5 }}>{title}</div>
-        <div style={{ fontSize: 11.5, color: 'var(--color-text-faint)' }}>{subtitle}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8 }}>
+        <div style={{ fontWeight: 700, fontSize: 12.5 }}>{title}</div>
+        <div style={{ fontSize: 10.5, color: 'var(--color-text-faint)' }}>{subtitle}</div>
       </div>
       {children}
     </div>

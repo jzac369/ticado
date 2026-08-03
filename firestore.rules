@@ -6,48 +6,86 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    // Public ticket intake: anyone can create a new ticket, its first
-    // message, and an activity entry - but only in a fresh, unassigned,
-    // open state. Reading, updating, and deleting still require sign-in.
+    // A "client" is a signed-in user with a users/{uid} profile whose role
+    // is 'klient' (created via "Pridať kolegu"). Everyone else who is
+    // signed in (agents added directly in Firebase Auth) is treated as
+    // full-access staff.
+    function myProfile() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function isClient() {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        myProfile().role == 'klient';
+    }
+    function isAgent() {
+      return isSignedIn() && !isClient();
+    }
+    function myCustomerId() {
+      return myProfile().customerId;
+    }
+    function ticketCustomerId(ticketId) {
+      return get(/databases/$(database)/documents/tickets/$(ticketId)).data.customerId;
+    }
+
     match /tickets/{ticketId} {
-      allow read, update, delete: if isSignedIn();
-      allow create: if isSignedIn() ||
-        (request.resource.data.status == 'otvoreny' &&
-         request.resource.data.assignedTo == null &&
-         request.resource.data.closedAt == null);
+      allow read: if isAgent() || (isClient() && resource.data.customerId == myCustomerId());
+      // Agents: full access. Clients: may only create tickets for their own
+      // company. Public intake (unauthenticated): only in a fresh,
+      // unassigned, open state.
+      allow create: if isAgent()
+        || (isClient() && request.resource.data.customerId == myCustomerId())
+        || (request.resource.data.status == 'otvoreny' &&
+            request.resource.data.assignedTo == null &&
+            request.resource.data.closedAt == null);
+      allow update, delete: if isAgent();
 
       match /messages/{messageId} {
-        allow read, update, delete: if isSignedIn();
-        allow create: if isSignedIn() || request.resource.data.isPrivate == false;
+        allow read: if isAgent() ||
+          (isClient() && ticketCustomerId(ticketId) == myCustomerId() && resource.data.isPrivate == false);
+        allow create: if isAgent()
+          || (isClient() && ticketCustomerId(ticketId) == myCustomerId() && request.resource.data.isPrivate == false)
+          || request.resource.data.isPrivate == false;
+        allow update, delete: if isAgent();
       }
       match /activity/{entryId} {
-        allow read, update, delete: if isSignedIn();
+        allow read: if isAgent() || (isClient() && ticketCustomerId(ticketId) == myCustomerId());
         allow create: if true;
+        allow update, delete: if isAgent();
       }
     }
 
-    // The public intake form lists existing companies in a dropdown and
-    // may create a new one by name; editing/deleting still requires sign-in.
-    // Note: this makes customer records (name, contact, email) publicly
-    // readable via the API, not just via the app's UI.
+    // The public intake form lists existing companies in a read-only
+    // dropdown (it cannot create new ones). Note: this makes customer
+    // records (name, contact, email) publicly readable via the API,
+    // not just via the app's UI.
     match /customers/{customerId} {
-      allow read, create: if true;
-      allow update, delete: if isSignedIn();
+      allow read: if true;
+      allow create, update, delete: if isAgent();
     }
 
+    // Colleague (client) profiles: an agent manages them; a client may only
+    // read their own profile.
     match /users/{userId} {
-      allow read, write: if isSignedIn();
+      allow read: if isAgent() || (isSignedIn() && request.auth.uid == userId);
+      allow write: if isAgent();
     }
 
     match /agents/{agentId} {
-      allow read, write: if isSignedIn();
+      allow read, write: if isAgent();
+    }
+
+    match /templates/{templateId} {
+      allow read, write: if isAgent();
     }
 
     // The ticket-number counter must be readable/incrementable by the
     // public intake form too, but only as a same-document +1 increment.
+    // The round-robin assignment counter (assignmentRR) is only ever
+    // touched by signed-in staff, covered by the isAgent() branch.
     match /meta/{docId} {
       allow read: if true;
-      allow write: if isSignedIn() ||
+      allow write: if isAgent() ||
         (docId == 'ticketCounter' &&
          request.resource.data.keys().hasOnly(['value']) &&
          request.resource.data.value is int &&

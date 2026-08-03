@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect, type CSSProperties, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { subscribeTickets } from '../firebase/tickets';
-import type { Ticket, TicketPriority, TicketStatus } from '../types';
+import { subscribeTickets, subscribeRecentMessages } from '../firebase/tickets';
+import type { Ticket, TicketMessage, TicketPriority, TicketStatus } from '../types';
 import { PRIORITY_LABELS, STATUS_LABELS } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/Badges';
 
@@ -33,6 +33,7 @@ export function TicketsListPage() {
   const [pageSize, setPageSize] = useState(25);
   const [page, setPage] = useState(1);
   const [quickFilter, setQuickFilter] = useState<'all' | 'open' | 'closed'>('all');
+  const [messages, setMessages] = useState<TicketMessage[]>([]);
 
   useEffect(() => {
     const unsub = subscribeTickets((data) => {
@@ -41,6 +42,17 @@ export function TicketsListPage() {
     });
     return unsub;
   }, []);
+
+  useEffect(() => subscribeRecentMessages(setMessages, 500), []);
+
+  const messageTextByTicket = useMemo(() => {
+    const map = new Map<string, string>();
+    messages.forEach((m) => {
+      const existing = map.get(m.ticketId) ?? '';
+      map.set(m.ticketId, `${existing} ${m.body}`);
+    });
+    return map;
+  }, [messages]);
 
   const filtered = useMemo(() => {
     let list = [...tickets];
@@ -64,7 +76,7 @@ export function TicketsListPage() {
       const words = search.toLowerCase().split(/\s+/).filter(Boolean);
       const exactPhrase = search.startsWith('"') && search.endsWith('"') && search.length > 1;
       list = list.filter((t) => {
-        const haystack = `${t.code} ${t.subject} ${t.customerName} ${t.requesterName}`.toLowerCase();
+        const haystack = `${t.code} ${t.subject} ${t.customerName} ${t.requesterName} ${(t.tags ?? []).join(' ')} ${messageTextByTicket.get(t.id) ?? ''}`.toLowerCase();
         if (exactPhrase) return haystack.includes(search.slice(1, -1).toLowerCase());
         return words.every((w) => haystack.includes(w));
       });
@@ -77,7 +89,7 @@ export function TicketsListPage() {
     });
 
     return list;
-  }, [tickets, quickFilter, statusFilter, priorityFilter, dateFrom, dateTo, search, sortBy]);
+  }, [tickets, quickFilter, statusFilter, priorityFilter, dateFrom, dateTo, search, sortBy, messageTextByTicket]);
 
   const stats = useMemo(() => {
     const all = tickets.length;
@@ -103,16 +115,45 @@ export function TicketsListPage() {
     setPage(1);
   }
 
+  function exportCsv() {
+    const headers = ['Ticket', 'Predmet', 'Zákazník', 'Žiadateľ', 'Stav', 'Priorita', 'Pridelené', 'Vytvorený', 'Uzavretý'];
+    const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const rows = filtered.map((t) => [
+      t.code,
+      t.subject,
+      t.customerName,
+      t.requesterName,
+      STATUS_LABELS[t.status],
+      PRIORITY_LABELS[t.priority],
+      t.assignedTo ?? '',
+      formatDate(t, 'createdAt'),
+      formatDate(t, 'closedAt'),
+    ]);
+    const csv = [headers, ...rows].map((row) => row.map(escape).join(',')).join('\r\n');
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tickety-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div>
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>
-          TICKETY
+      <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>
+            TICKETY
+          </div>
+          <h1 style={{ fontSize: 26, margin: '4px 0 4px' }}>Všetky tickety</h1>
+          <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 13.5 }}>
+            Prehľad servisných tiketov a priradenia.
+          </p>
         </div>
-        <h1 style={{ fontSize: 26, margin: '4px 0 4px' }}>Všetky tickety</h1>
-        <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-          Prehľad servisných tiketov a priradenia.
-        </p>
+        <button onClick={exportCsv} style={secondaryBtn}>
+          ⬇ Exportovať CSV
+        </button>
       </div>
 
       <div
@@ -144,7 +185,7 @@ export function TicketsListPage() {
             setSearch(e.target.value);
             setPage(1);
           }}
-          placeholder='Hľadať ID, predmet a zákazníka; viac slov = všetky slová…'
+          placeholder='Hľadať ID, predmet, zákazníka aj obsah komunikácie; viac slov = všetky slová…'
           style={{
             width: '100%',
             padding: '10px 14px',
@@ -225,7 +266,7 @@ export function TicketsListPage() {
               style={{
                 ...secondaryBtn,
                 background: quickFilter === value ? 'var(--color-primary-bg)' : 'var(--color-surface)',
-                borderColor: quickFilter === value ? 'var(--color-primary-border)' : 'var(--color-border)',
+                border: `1px solid ${quickFilter === value ? 'var(--color-primary-border)' : 'var(--color-border)'}`,
                 color: quickFilter === value ? 'var(--color-primary)' : 'var(--color-text)',
               }}
             >
@@ -297,7 +338,11 @@ export function TicketsListPage() {
               <tr
                 key={t.id}
                 onClick={() => navigate(`/tickets/${t.id}`)}
-                style={{ borderTop: '1px solid var(--color-border)', cursor: 'pointer' }}
+                style={{
+                  borderTop: '1px solid var(--color-border)',
+                  cursor: 'pointer',
+                  borderLeft: t.priority === 'kriticka' ? '3px solid var(--color-danger)' : '3px solid transparent',
+                }}
               >
                 <td style={{ padding: '12px 14px', fontWeight: 700, color: 'var(--color-primary)' }}>{t.code}</td>
                 <td style={{ padding: '12px 14px' }}>
@@ -305,6 +350,25 @@ export function TicketsListPage() {
                   <div style={{ fontSize: 12, color: 'var(--color-text-faint)' }}>
                     {t.requesterName} · {t.customerName}
                   </div>
+                  {t.tags && t.tags.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                      {t.tags.map((tag) => (
+                        <span
+                          key={tag}
+                          style={{
+                            fontSize: 10.5,
+                            fontWeight: 600,
+                            padding: '1px 7px',
+                            borderRadius: 999,
+                            background: 'var(--color-primary-bg)',
+                            color: 'var(--color-primary)',
+                          }}
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </td>
                 <td style={{ padding: '12px 14px' }}>
                   <StatusBadge status={t.status} />

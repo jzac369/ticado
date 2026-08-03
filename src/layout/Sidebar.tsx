@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 interface NavGroup {
   title: string;
   items: { label: string; to: string; end?: boolean }[];
 }
 
-const groups: NavGroup[] = [
+const agentGroups: NavGroup[] = [
   {
     title: 'Tikety',
     items: [
@@ -20,12 +21,25 @@ const groups: NavGroup[] = [
   },
   {
     title: 'Nastavenia',
-    items: [{ label: 'IT technici', to: '/agents' }],
+    items: [
+      { label: 'IT technici', to: '/agents' },
+      { label: 'Šablóny odpovedí', to: '/templates' },
+    ],
+  },
+];
+
+const clientGroups: NavGroup[] = [
+  {
+    title: 'Tikety',
+    items: [{ label: 'Moje tickety', to: '/', end: true }],
   },
 ];
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  const { profile } = useAuth();
+  const isClient = profile?.role === 'klient';
+  const groups = isClient ? clientGroups : agentGroups;
 
   return (
     <aside
@@ -42,9 +56,11 @@ export function Sidebar() {
     >
       <div>
         <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.5, color: 'var(--color-text-faint)' }}>
-          PRACOVNÝ PRIESTOR
+          {isClient ? 'KLIENTSKY PRÍSTUP' : 'PRACOVNÝ PRIESTOR'}
         </div>
-        <div style={{ fontWeight: 700, fontSize: 15 }}>Ticado Interné IT</div>
+        <div style={{ fontWeight: 700, fontSize: 15 }}>
+          {isClient && profile?.role === 'klient' ? profile.customerName : 'Ticado Interné IT'}
+        </div>
       </div>
 
       {groups.map((group) => {
@@ -97,8 +113,24 @@ export function Sidebar() {
         );
       })}
 
-      <div style={{ marginTop: 'auto', fontSize: 11.5, color: 'var(--color-text-faint)' }}>
-        Ticado ServiceDesk · v1.0
+      <div style={{ marginTop: 'auto', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <NavLink
+          to="/legend"
+          style={({ isActive }) => ({
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '9px 12px',
+            borderRadius: 'var(--radius-md)',
+            fontSize: 13.5,
+            fontWeight: 600,
+            color: isActive ? 'var(--color-primary)' : 'var(--color-text)',
+            background: isActive ? 'var(--color-primary-bg)' : 'transparent',
+          })}
+        >
+          📖 Legenda
+        </NavLink>
+        <div style={{ fontSize: 11.5, color: 'var(--color-text-faint)', paddingLeft: 12 }}>Ticado ServiceDesk · v1.0</div>
       </div>
     </aside>
   );

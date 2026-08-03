@@ -9,6 +9,9 @@ export function Topbar() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission | 'unsupported'>(
+    typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
+  );
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -20,6 +23,13 @@ export function Topbar() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
+  async function toggleNotifications() {
+    if (notifPermission === 'unsupported') return;
+    if (notifPermission === 'granted') return;
+    const result = await Notification.requestPermission();
+    setNotifPermission(result);
+  }
+
   const displayName = user?.email?.split('@')[0] ?? 'Používateľ';
 
   return (
@@ -29,13 +39,11 @@ export function Topbar() {
         flexShrink: 0,
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        padding: '0 20px',
         borderBottom: '1px solid var(--color-border)',
         background: 'var(--color-surface)',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ width: 240, flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, paddingLeft: 20 }}>
         <Logo size={26} />
         <span
           style={{
@@ -49,10 +57,39 @@ export function Topbar() {
         >
           VERZIA 1.0
         </span>
+      </div>
+
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', paddingLeft: 28, minWidth: 0 }}>
         <AlertTicker />
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingRight: 20 }}>
+        {notifPermission !== 'unsupported' && (
+          <button
+            onClick={toggleNotifications}
+            title={
+              notifPermission === 'granted'
+                ? 'Notifikácie sú povolené'
+                : notifPermission === 'denied'
+                  ? 'Notifikácie sú blokované v nastaveniach prehliadača'
+                  : 'Povoliť upozornenia na nové tickety'
+            }
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 34,
+              height: 34,
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              background: notifPermission === 'granted' ? 'var(--color-success-bg)' : 'var(--color-surface)',
+              cursor: notifPermission === 'denied' ? 'default' : 'pointer',
+              fontSize: 15,
+            }}
+          >
+            {notifPermission === 'granted' ? '🔔' : '🔕'}
+          </button>
+        )}
         <button
           onClick={() => navigate('/tickets/new')}
           style={{
