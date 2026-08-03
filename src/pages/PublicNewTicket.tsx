@@ -1,16 +1,14 @@
-import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import { useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { createTicket } from '../firebase/tickets';
-import { subscribeCustomers, createCustomer } from '../firebase/customers';
-import type { Customer, TicketPriority } from '../types';
+import { createCustomer } from '../firebase/customers';
+import type { TicketPriority } from '../types';
 import { PRIORITY_LABELS } from '../types';
 import { Logo } from '../components/Logo';
 
 const CATEGORIES = ['Infra', 'Security', 'Sieť', 'Backup', 'Aplikácie', 'Hardvér', 'Iné'];
 
 export function PublicNewTicketPage() {
-  const [customers, setCustomers] = useState<Customer[]>([]);
-  const [customerId, setCustomerId] = useState('');
-  const [newCustomerName, setNewCustomerName] = useState('');
+  const [companyName, setCompanyName] = useState('');
   const [category, setCategory] = useState('');
   const [priority, setPriority] = useState<TicketPriority>('normalna');
   const [subject, setSubject] = useState('');
@@ -20,8 +18,6 @@ export function PublicNewTicketPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [createdCode, setCreatedCode] = useState<string | null>(null);
-
-  useEffect(() => subscribeCustomers(setCustomers), []);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -39,27 +35,20 @@ export function PublicNewTicketPage() {
       setError('Zadajte platnú emailovú adresu, na ktorú vám odpovieme.');
       return;
     }
-    if (!customerId && !newCustomerName.trim()) {
+    if (!companyName.trim()) {
       setError('Zadajte názov vašej firmy.');
       return;
     }
 
     setSubmitting(true);
     try {
-      let finalCustomerId = customerId;
-      let finalCustomerName = customers.find((c) => c.id === customerId)?.name ?? '';
-
-      if (!finalCustomerId && newCustomerName.trim()) {
-        const ref = await createCustomer({ name: newCustomerName.trim() });
-        finalCustomerId = ref.id;
-        finalCustomerName = newCustomerName.trim();
-      }
+      const customerRef = await createCustomer({ name: companyName.trim() });
 
       const { code } = await createTicket({
         subject: subject.trim(),
         description: description.trim(),
-        customerId: finalCustomerId || 'neznamy',
-        customerName: finalCustomerName || 'Neznámy zákazník',
+        customerId: customerRef.id,
+        customerName: companyName.trim(),
         requesterName: requesterName.trim(),
         requesterEmail: requesterEmail.trim(),
         category: category || 'Iné',
@@ -149,26 +138,12 @@ export function PublicNewTicketPage() {
 
               <div style={{ marginTop: 14 }}>
                 <Field label="Názov firmy *">
-                  <select
-                    value={customerId}
-                    onChange={(e) => setCustomerId(e.target.value)}
+                  <input
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Názov vašej firmy"
                     style={inputStyle}
-                  >
-                    <option value="">— Zadať novú firmu —</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  {!customerId && (
-                    <input
-                      value={newCustomerName}
-                      onChange={(e) => setNewCustomerName(e.target.value)}
-                      placeholder="Názov vašej firmy"
-                      style={{ ...inputStyle, marginTop: 8 }}
-                    />
-                  )}
+                  />
                 </Field>
               </div>
             </Section>
