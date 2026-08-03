@@ -185,7 +185,6 @@ export function PublicNewTicketPage() {
                     type="email"
                     value={form.requesterEmail}
                     onChange={(e) => set('requesterEmail', e.target.value)}
-                    placeholder="meno@firma.sk"
                     style={inputStyle}
                   />
                 </Field>
@@ -214,7 +213,6 @@ export function PublicNewTicketPage() {
                   <input
                     value={form.department}
                     onChange={(e) => set('department', e.target.value)}
-                    placeholder="napr. Účtovníctvo"
                     style={inputStyle}
                   />
                 </Field>

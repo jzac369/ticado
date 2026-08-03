@@ -1,4 +1,4 @@
-import { addDoc, collection, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from './config';
 import type { Timestamp } from 'firebase/firestore';
 
@@ -28,4 +28,12 @@ export async function createAgent(input: { name: string; position?: string; emai
     active: true,
     createdAt: serverTimestamp(),
   });
+}
+
+export async function updateAgent(agentId: string, input: Partial<Pick<Agent, 'name' | 'position' | 'email'>>) {
+  return updateDoc(doc(db, 'agents', agentId), input);
+}
+
+export async function deleteAgent(agentId: string) {
+  return deleteDoc(doc(db, 'agents', agentId));
 }

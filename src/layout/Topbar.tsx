@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Logo } from '../components/Logo';
+import { AlertTicker } from '../components/AlertTicker';
 
 export function Topbar() {
   const { user, logout } = useAuth();
@@ -48,6 +49,7 @@ export function Topbar() {
         >
           VERZIA 1.0
         </span>
+        <AlertTicker />
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
