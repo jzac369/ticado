@@ -30,6 +30,21 @@ export interface Customer {
   contactPerson?: string;
   email?: string;
   phone?: string;
+  emailDomain?: string;
+  createdAt: Timestamp | null;
+}
+
+export interface Colleague {
+  id: string;
+  uid: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  role: 'klient';
+  customerId: string;
+  customerName: string;
+  active: boolean;
   createdAt: Timestamp | null;
 }
 

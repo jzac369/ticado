@@ -83,7 +83,7 @@ async function nextTicketCode(): Promise<string> {
   const counterRef = doc(db, 'meta', 'ticketCounter');
   const nextNumber = await runTransaction(db, async (tx) => {
     const snap = await tx.get(counterRef);
-    const current = snap.exists() ? (snap.data().value as number) : 1680;
+    const current = snap.exists() ? (snap.data().value as number) : -1;
     const next = current + 1;
     tx.set(counterRef, { value: next }, { merge: true });
     return next;

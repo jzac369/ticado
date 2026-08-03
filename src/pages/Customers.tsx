@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { subscribeCustomers, createCustomer } from '../firebase/customers';
 import { subscribeTickets } from '../firebase/tickets';
 import type { Customer, Ticket } from '../types';
@@ -9,6 +10,8 @@ export function CustomersPage() {
   const [name, setName] = useState('');
   const [contactPerson, setContactPerson] = useState('');
   const [email, setEmail] = useState('');
+  const [emailDomain, setEmailDomain] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => subscribeCustomers(setCustomers), []);
   useEffect(() => subscribeTickets(setTickets), []);
@@ -22,17 +25,23 @@ export function CustomersPage() {
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    await createCustomer({ name: name.trim(), contactPerson: contactPerson.trim(), email: email.trim() });
+    await createCustomer({
+      name: name.trim(),
+      contactPerson: contactPerson.trim(),
+      email: email.trim(),
+      emailDomain: emailDomain.trim().replace(/^@/, ''),
+    });
     setName('');
     setContactPerson('');
     setEmail('');
+    setEmailDomain('');
   }
 
   return (
     <div>
       <h1 style={{ fontSize: 24, margin: '0 0 4px' }}>Zákazníci</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Zoznam zákazníkov a počet ich ticketov.
+        Zoznam zákazníkov, počet ich ticketov a správa kolegov.
       </p>
 
       <form
@@ -45,6 +54,7 @@ export function CustomersPage() {
           border: '1px solid var(--color-border)',
           borderRadius: 'var(--radius-lg)',
           padding: 16,
+          flexWrap: 'wrap',
         }}
       >
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Názov firmy" style={inputStyle} required />
@@ -55,6 +65,12 @@ export function CustomersPage() {
           style={inputStyle}
         />
         <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email" style={inputStyle} />
+        <input
+          value={emailDomain}
+          onChange={(e) => setEmailDomain(e.target.value)}
+          placeholder="Doména pre kolegov (napr. rona.sk)"
+          style={inputStyle}
+        />
         <button
           type="submit"
           style={{
@@ -82,7 +98,7 @@ export function CustomersPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
-              {['Firma', 'Kontakt', 'Email', 'Tickety'].map((h) => (
+              {['Firma', 'Kontakt', 'Email', 'Doména', 'Tickety', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, color: 'var(--color-text-faint)' }}>
                   {h}
                 </th>
@@ -92,17 +108,23 @@ export function CustomersPage() {
           <tbody>
             {customers.length === 0 && (
               <tr>
-                <td colSpan={4} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   Zatiaľ žiadni zákazníci.
                 </td>
               </tr>
             )}
             {customers.map((c) => (
-              <tr key={c.id} style={{ borderTop: '1px solid var(--color-border)' }}>
+              <tr
+                key={c.id}
+                onClick={() => navigate(`/customers/${c.id}`)}
+                style={{ borderTop: '1px solid var(--color-border)', cursor: 'pointer' }}
+              >
                 <td style={{ padding: '12px 14px', fontWeight: 700 }}>{c.name}</td>
                 <td style={{ padding: '12px 14px' }}>{c.contactPerson || '—'}</td>
                 <td style={{ padding: '12px 14px' }}>{c.email || '—'}</td>
+                <td style={{ padding: '12px 14px', color: 'var(--color-text-faint)' }}>{c.emailDomain || '—'}</td>
                 <td style={{ padding: '12px 14px' }}>{ticketCounts.get(c.id) ?? 0}</td>
+                <td style={{ padding: '12px 14px', color: 'var(--color-text-faint)' }}>›</td>
               </tr>
             ))}
           </tbody>
@@ -114,6 +136,7 @@ export function CustomersPage() {
 
 const inputStyle = {
   flex: 1,
+  minWidth: 160,
   padding: '10px 12px',
   border: '1px solid var(--color-border)',
   borderRadius: 'var(--radius-md)',

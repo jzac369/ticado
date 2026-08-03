@@ -3,39 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Logo } from '../components/Logo';
 
-const IDLE_LIMIT_SECONDS = 30 * 60;
-
-function formatTime(totalSeconds: number) {
-  const m = Math.floor(totalSeconds / 60);
-  const s = totalSeconds % 60;
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
 export function Topbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const [remaining, setRemaining] = useState(IDLE_LIMIT_SECONDS);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const resetTimer = () => setRemaining(IDLE_LIMIT_SECONDS);
-    const events = ['mousemove', 'keydown', 'click', 'scroll'];
-    events.forEach((ev) => window.addEventListener(ev, resetTimer));
-    const interval = setInterval(() => {
-      setRemaining((r) => Math.max(0, r - 1));
-    }, 1000);
-    return () => {
-      events.forEach((ev) => window.removeEventListener(ev, resetTimer));
-      clearInterval(interval);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (remaining === 0) {
-      logout().then(() => navigate('/login'));
-    }
-  }, [remaining, logout, navigate]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -79,23 +51,6 @@ export function Topbar() {
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <div
-          title="Automatické odhlásenie pri nečinnosti"
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            fontSize: 12.5,
-            fontWeight: 600,
-            color: remaining < 60 ? 'var(--color-danger)' : 'var(--color-text-muted)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 999,
-            padding: '5px 12px',
-          }}
-        >
-          ⏱ NEČINNOSŤ {formatTime(remaining)}
-        </div>
-
         <button
           onClick={() => navigate('/tickets/new')}
           style={{
