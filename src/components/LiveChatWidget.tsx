@@ -3,7 +3,10 @@ import {
   createLiveChat,
   sendChatMessage,
   subscribeChatMessages,
+  subscribeLiveChat,
+  closeLiveChat,
   type ChatMessage,
+  type LiveChat,
 } from '../firebase/livechat';
 
 const STORAGE_KEY = 'ticado_livechat_id';
@@ -12,6 +15,7 @@ const NAME_KEY = 'ticado_livechat_name';
 export function LiveChatWidget() {
   const [open, setOpen] = useState(false);
   const [chatId, setChatId] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
+  const [chat, setChat] = useState<LiveChat | null>(null);
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) ?? '');
   const [email, setEmail] = useState('');
   const [ticketCode, setTicketCode] = useState('');
@@ -26,8 +30,15 @@ export function LiveChatWidget() {
   }, [chatId]);
 
   useEffect(() => {
+    if (!chatId) return;
+    return subscribeLiveChat(chatId, setChat);
+  }, [chatId]);
+
+  useEffect(() => {
     if (listRef.current) listRef.current.scrollTop = listRef.current.scrollHeight;
   }, [messages, open]);
+
+  const ended = chat?.status === 'uzavrety';
 
   async function handleStart(e: FormEvent) {
     e.preventDefault();
@@ -38,6 +49,8 @@ export function LiveChatWidget() {
       localStorage.setItem(STORAGE_KEY, id);
       localStorage.setItem(NAME_KEY, name.trim());
       setChatId(id);
+      setChat(null);
+      setMessages([]);
     } finally {
       setStarting(false);
     }
@@ -45,10 +58,24 @@ export function LiveChatWidget() {
 
   async function handleSend(e: FormEvent) {
     e.preventDefault();
-    if (!draft.trim() || !chatId) return;
+    if (!draft.trim() || !chatId || ended) return;
     const body = draft.trim();
     setDraft('');
     await sendChatMessage(chatId, { author: 'visitor', authorName: name || 'Návštevník', body });
+  }
+
+  async function handleEndChat() {
+    if (!chatId) return;
+    if (!window.confirm('Naozaj chcete ukončiť tento chat? Nebude sa dať v ňom pokračovať.')) return;
+    await closeLiveChat(chatId);
+  }
+
+  function handleStartNew() {
+    localStorage.removeItem(STORAGE_KEY);
+    setChatId(null);
+    setChat(null);
+    setMessages([]);
+    setTicketCode('');
   }
 
   if (!open) {
@@ -106,9 +133,20 @@ export function LiveChatWidget() {
         }}
       >
         <div style={{ fontWeight: 700, fontSize: 13.5 }}>💬 Live chat s podporou</div>
-        <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 16, cursor: 'pointer' }}>
-          ×
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {chatId && !ended && (
+            <button
+              onClick={handleEndChat}
+              title="Ukončiť chat"
+              style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}
+            >
+              Ukončiť chat
+            </button>
+          )}
+          <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 16, cursor: 'pointer' }}>
+            ×
+          </button>
+        </div>
       </div>
 
       {!chatId ? (
@@ -163,22 +201,52 @@ export function LiveChatWidget() {
               </div>
             )}
             {messages.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  alignSelf: m.author === 'visitor' ? 'flex-end' : 'flex-start',
-                  maxWidth: '80%',
-                  background: m.author === 'visitor' ? 'var(--color-primary)' : 'var(--color-surface-2)',
-                  color: m.author === 'visitor' ? '#fff' : 'var(--color-text)',
-                  padding: '7px 10px',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: 12.5,
-                }}
-              >
-                {m.body}
+              <div key={m.id} style={{ alignSelf: m.author === 'visitor' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
+                <div
+                  style={{
+                    fontSize: 10,
+                    color: 'var(--color-text-faint)',
+                    marginBottom: 2,
+                    textAlign: m.author === 'visitor' ? 'right' : 'left',
+                  }}
+                >
+                  {m.author === 'visitor' ? 'Vy' : m.authorName}
+                </div>
+                <div
+                  style={{
+                    background: m.author === 'visitor' ? 'var(--color-primary)' : 'var(--color-surface-2)',
+                    color: m.author === 'visitor' ? '#fff' : 'var(--color-text)',
+                    padding: '7px 10px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: 12.5,
+                  }}
+                >
+                  {m.body}
+                </div>
               </div>
             ))}
           </div>
+          {ended ? (
+            <div style={{ padding: 12, borderTop: '1px solid var(--color-border)', textAlign: 'center' }}>
+              <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 8 }}>
+                Tento chat bol ukončený.
+              </div>
+              <button
+                onClick={handleStartNew}
+                style={{
+                  padding: '8px 16px',
+                  background: 'var(--color-primary)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  fontWeight: 700,
+                  fontSize: 12.5,
+                }}
+              >
+                Začať nový chat
+              </button>
+            </div>
+          ) : (
           <form onSubmit={handleSend} style={{ display: 'flex', gap: 6, padding: 10, borderTop: '1px solid var(--color-border)' }}>
             <input
               value={draft}
@@ -201,6 +269,7 @@ export function LiveChatWidget() {
               →
             </button>
           </form>
+          )}
         </>
       )}
     </div>

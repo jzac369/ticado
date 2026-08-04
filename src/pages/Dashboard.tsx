@@ -123,11 +123,11 @@ export function DashboardPage() {
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 8 }}>
-        <Card label="Nevyriešené" value={stats.open} tone="var(--chart-series-1)" />
-        <Card label="Priradené" value={stats.assigned} tone="var(--chart-series-7)" />
-        <Card label="Nepriradené" value={stats.unassigned} tone="var(--color-text-faint)" />
-        <Card label="Čakajúce na klienta" value={stats.waiting} tone="var(--chart-warning)" />
-        <Card label="Vyriešené za 30 dní" value={stats.resolved30d} tone="var(--chart-good)" />
+        <Card label="Nevyriešené" value={stats.open} tone="info" />
+        <Card label="Priradené" value={stats.assigned} tone="primary" />
+        <Card label="Nepriradené" value={stats.unassigned} tone="danger" />
+        <Card label="Čakajúce na klienta" value={stats.waiting} tone="warning" />
+        <Card label="Vyriešené za 30 dní" value={stats.resolved30d} tone="success" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 8, marginBottom: 8 }}>
@@ -221,18 +221,21 @@ export function DashboardPage() {
   );
 }
 
-function Card({ label, value, tone }: { label: string; value: number; tone: string }) {
+type CardTone = 'info' | 'primary' | 'danger' | 'warning' | 'success';
+
+function Card({ label, value, tone }: { label: string; value: number; tone: CardTone }) {
   return (
     <div
       style={{
-        background: 'var(--color-surface)',
+        background: `var(--color-${tone}-bg)`,
         border: '1px solid var(--color-border)',
+        borderLeft: `3px solid var(--color-${tone})`,
         borderRadius: 'var(--radius-md)',
         padding: '7px 10px',
       }}
     >
-      <div style={{ fontSize: 10, color: 'var(--color-text-faint)', fontWeight: 600, marginBottom: 2 }}>{label}</div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: tone }}>{value}</div>
+      <div style={{ fontSize: 10, color: 'var(--color-text-muted)', fontWeight: 600, marginBottom: 2 }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 700, color: `var(--color-${tone})` }}>{value}</div>
     </div>
   );
 }

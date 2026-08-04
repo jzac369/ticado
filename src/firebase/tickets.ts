@@ -24,6 +24,7 @@ export interface TicketLookup {
   ticketId: string;
   code: string;
   subject: string;
+  category: string;
   status: TicketStatus;
   priority: TicketPriority;
   hasAgent: boolean;
@@ -155,6 +156,7 @@ export async function createTicket(input: NewTicketInput) {
     ticketId: docRef.id,
     code,
     subject: input.subject,
+    category: input.category,
     status: 'otvoreny' as TicketStatus,
     priority: input.priority,
     hasAgent: Boolean(assignedTo),

@@ -108,12 +108,20 @@ export function LiveChatInboxPage() {
     await updateGeneralSettings({ ...settings, liveChatEnabled: !settings.liveChatEnabled });
   }
 
+  const agentName = user?.email?.split('@')[0] ?? 'Technik';
+
   async function handleSend(e: FormEvent) {
     e.preventDefault();
-    if (!draft.trim() || !selected) return;
+    if (!draft.trim() || !selected || active?.status === 'uzavrety') return;
     const body = draft.trim();
     setDraft('');
-    await sendChatMessage(selected, { author: 'agent', authorName: user?.email?.split('@')[0] ?? 'Technik', body });
+    await sendChatMessage(selected, { author: 'agent', authorName: agentName, body });
+  }
+
+  async function handleEndChat() {
+    if (!active) return;
+    if (!window.confirm('Naozaj chcete ukončiť tento chat? Nebude sa dať v ňom pokračovať.')) return;
+    await closeLiveChat(active.id);
   }
 
   const chatPanel = (
@@ -129,45 +137,60 @@ export function LiveChatInboxPage() {
             </div>
             {active.status === 'otvoreny' && (
               <button
-                onClick={() => closeLiveChat(active.id)}
+                onClick={handleEndChat}
                 style={{ padding: '6px 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', background: 'var(--color-surface)', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
               >
-                Uzavrieť konverzáciu
+                Ukončiť chat
               </button>
             )}
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {messages.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  alignSelf: m.author === 'agent' ? 'flex-end' : 'flex-start',
-                  maxWidth: '70%',
-                  background: m.author === 'agent' ? 'var(--color-primary)' : 'var(--color-surface-2)',
-                  color: m.author === 'agent' ? '#fff' : 'var(--color-text)',
-                  padding: '8px 12px',
-                  borderRadius: 'var(--radius-md)',
-                  fontSize: 13,
-                }}
-              >
-                {m.body}
+              <div key={m.id} style={{ alignSelf: m.author === 'agent' ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
+                <div
+                  style={{
+                    fontSize: 10.5,
+                    color: 'var(--color-text-faint)',
+                    marginBottom: 2,
+                    textAlign: m.author === 'agent' ? 'right' : 'left',
+                  }}
+                >
+                  {m.author === 'agent' ? (m.authorName === agentName ? 'Vy' : m.authorName) : m.authorName}
+                </div>
+                <div
+                  style={{
+                    background: m.author === 'agent' ? 'var(--color-primary)' : 'var(--color-surface-2)',
+                    color: m.author === 'agent' ? '#fff' : 'var(--color-text)',
+                    padding: '8px 12px',
+                    borderRadius: 'var(--radius-md)',
+                    fontSize: 13,
+                  }}
+                >
+                  {m.body}
+                </div>
               </div>
             ))}
           </div>
-          <form onSubmit={handleSend} style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--color-border)' }}>
-            <input
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              placeholder="Napíšte odpoveď…"
-              style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', background: 'var(--color-surface)' }}
-            />
-            <button
-              type="submit"
-              style={{ padding: '0 18px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 700 }}
-            >
-              Odoslať
-            </button>
-          </form>
+          {active.status === 'uzavrety' ? (
+            <div style={{ padding: 14, borderTop: '1px solid var(--color-border)', textAlign: 'center', fontSize: 12.5, color: 'var(--color-text-muted)' }}>
+              Tento chat bol ukončený. Návštevník musí na pokračovanie začať nový chat.
+            </div>
+          ) : (
+            <form onSubmit={handleSend} style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--color-border)' }}>
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder="Napíšte odpoveď…"
+                style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', background: 'var(--color-surface)' }}
+              />
+              <button
+                type="submit"
+                style={{ padding: '0 18px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 700 }}
+              >
+                Odoslať
+              </button>
+            </form>
+          )}
         </>
       )}
     </div>

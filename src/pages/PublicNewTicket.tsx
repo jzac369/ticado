@@ -208,7 +208,7 @@ export function PublicNewTicketPage() {
             <p style={{ margin: '0 0 24px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
               Zadajte číslo ticketu, ktoré ste dostali pri nahlásení problému.
             </p>
-            <TicketStatusLookup />
+            <TicketStatusLookup onBackHome={() => setView('landing')} />
           </div>
         )}
 

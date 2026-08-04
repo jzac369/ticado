@@ -1,8 +1,14 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
 import { lookupTicketByCodeAndEmail, sendPublicFollowUp, cancelTicketByVisitor, type TicketLookup } from '../firebase/tickets';
+import { STATUS_LABELS, PRIORITY_LABELS } from '../types';
 import { StatusBadge, PriorityBadge } from './Badges';
 
-export function TicketStatusLookup() {
+function fmt(ts: TicketLookup['createdAt']) {
+  if (!ts) return '—';
+  return ts.toDate().toLocaleString('sk-SK', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+export function TicketStatusLookup({ onBackHome }: { onBackHome?: () => void }) {
   const [code, setCode] = useState('');
   const [verifyEmail, setVerifyEmail] = useState('');
   const [lookup, setLookup] = useState<TicketLookup | null>(null);
@@ -112,17 +118,50 @@ export function TicketStatusLookup() {
             }}
           >
             <div style={{ fontWeight: 700, color: 'var(--color-primary)', marginBottom: 4 }}>{lookup.code}</div>
-            <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 10 }}>{lookup.subject}</div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
-              <StatusBadge status={lookup.status} />
-              <PriorityBadge priority={lookup.priority} />
+            <div style={{ fontWeight: 600, fontSize: 14.5, marginBottom: 12 }}>{lookup.subject}</div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
+              <div>
+                <div style={detailLabelStyle}>Stav</div>
+                <StatusBadge status={lookup.status} />
+              </div>
+              <div>
+                <div style={detailLabelStyle}>Priorita</div>
+                <PriorityBadge priority={lookup.priority} />
+              </div>
+              {lookup.category && (
+                <div>
+                  <div style={detailLabelStyle}>Kategória</div>
+                  <div style={{ fontSize: 13 }}>{lookup.category}</div>
+                </div>
+              )}
+              <div>
+                <div style={detailLabelStyle}>Priradenie</div>
+                <div style={{ fontSize: 13 }}>{lookup.hasAgent ? 'Priradený technik' : 'Čaká vo fronte'}</div>
+              </div>
+              <div>
+                <div style={detailLabelStyle}>Vytvorené</div>
+                <div style={{ fontSize: 13 }}>{fmt(lookup.createdAt)}</div>
+              </div>
+              <div>
+                <div style={detailLabelStyle}>Naposledy aktualizované</div>
+                <div style={{ fontSize: 13 }}>{fmt(lookup.updatedAt)}</div>
+              </div>
             </div>
-            <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>
+
+            <div
+              style={{
+                fontSize: 12.5,
+                color: 'var(--color-text-muted)',
+                borderTop: '1px solid var(--color-border)',
+                paddingTop: 10,
+              }}
+            >
               {lookup.status === 'uzavrety'
-                ? 'Táto požiadavka je uzavretá.'
+                ? 'Stav: Táto požiadavka je uzavretá.'
                 : lookup.hasAgent
-                  ? 'Vašej požiadavke sa aktuálne venuje technik.'
-                  : 'Požiadavka čaká vo fronte na priradenie technikovi.'}
+                  ? `Stav: ${STATUS_LABELS[lookup.status]}. Priorita: ${PRIORITY_LABELS[lookup.priority]}. Vašej požiadavke sa aktuálne venuje technik.`
+                  : `Stav: ${STATUS_LABELS[lookup.status]}. Priorita: ${PRIORITY_LABELS[lookup.priority]}. Požiadavka čaká vo fronte na priradenie technikovi.`}
             </div>
             {lookup.status !== 'uzavrety' && (
               <button
@@ -193,6 +232,12 @@ export function TicketStatusLookup() {
             ))}
         </div>
       )}
+
+      {onBackHome && (
+        <button onClick={onBackHome} style={backHomeStyle}>
+          ← Späť na hlavnú stránku podpory
+        </button>
+      )}
     </div>
   );
 }
@@ -202,4 +247,24 @@ const inputStyle: CSSProperties = {
   border: '1px solid var(--color-border)',
   borderRadius: 'var(--radius-md)',
   background: 'var(--color-surface)',
+};
+
+const detailLabelStyle: CSSProperties = {
+  fontSize: 11,
+  fontWeight: 700,
+  color: 'var(--color-text-faint)',
+  marginBottom: 3,
+};
+
+const backHomeStyle: CSSProperties = {
+  marginTop: 24,
+  padding: '10px 0',
+  width: '100%',
+  background: 'none',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-md)',
+  color: 'var(--color-text-muted)',
+  fontWeight: 600,
+  fontSize: 13,
+  cursor: 'pointer',
 };

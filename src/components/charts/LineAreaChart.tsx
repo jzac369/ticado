@@ -20,7 +20,7 @@ export function LineAreaChart({ categories, series, height = 220 }: Props) {
   const [hover, setHover] = useState<number | null>(null);
 
   const maxRaw = Math.max(1, ...series.flatMap((s) => s.values));
-  const max = Math.ceil(maxRaw / 4) * 4 || 4;
+  const max = Math.ceil(maxRaw / 2) * 2 || 2;
   const innerW = width - PAD.left - PAD.right;
   const innerH = height - PAD.top - PAD.bottom;
   const n = categories.length;
@@ -28,14 +28,32 @@ export function LineAreaChart({ categories, series, height = 220 }: Props) {
   const x = (i: number) => PAD.left + (n <= 1 ? 0 : (i / (n - 1)) * innerW);
   const y = (v: number) => PAD.top + innerH - (v / max) * innerH;
 
-  const ticksY = [0, 0.25, 0.5, 0.75, 1].map((f) => Math.round(max * f));
+  const ticksY = [0, 1 / 6, 2 / 6, 3 / 6, 4 / 6, 5 / 6, 1].map((f) => Math.round(max * f * 10) / 10);
 
+  // Smooth curve through the points via cubic Beziers (Catmull-Rom-ish),
+  // instead of straight segments - softer, easier to read at a glance.
+  function smoothPath(values: number[]) {
+    const pts = values.map((v, i) => [x(i), y(v)] as const);
+    if (pts.length < 2) return pts.length === 1 ? `M ${pts[0][0]} ${pts[0][1]}` : '';
+    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [x0, y0] = pts[i === 0 ? 0 : i - 1];
+      const [x1, y1] = pts[i];
+      const [x2, y2] = pts[i + 1];
+      const [x3, y3] = pts[i + 2 < pts.length ? i + 2 : i + 1];
+      const cp1x = x1 + (x2 - x0) / 6;
+      const cp1y = y1 + (y2 - y0) / 6;
+      const cp2x = x2 - (x3 - x1) / 6;
+      const cp2y = y2 - (y3 - y1) / 6;
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${x2} ${y2}`;
+    }
+    return d;
+  }
   function linePath(values: number[]) {
-    return values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(v)}`).join(' ');
+    return smoothPath(values);
   }
   function areaPath(values: number[]) {
-    const line = values.map((v, i) => `${i === 0 ? 'M' : 'L'} ${x(i)} ${y(v)}`).join(' ');
-    return `${line} L ${x(n - 1)} ${PAD.top + innerH} L ${x(0)} ${PAD.top + innerH} Z`;
+    return `${smoothPath(values)} L ${x(n - 1)} ${PAD.top + innerH} L ${x(0)} ${PAD.top + innerH} Z`;
   }
 
   return (
@@ -61,7 +79,7 @@ export function LineAreaChart({ categories, series, height = 220 }: Props) {
         ))}
 
         {series.map((s) => (
-          <path key={`${s.key}-area`} d={areaPath(s.values)} fill={s.color} opacity={0.1} />
+          <path key={`${s.key}-area`} d={areaPath(s.values)} fill={s.color} opacity={0.08} />
         ))}
         {series.map((s) => (
           <path
@@ -69,7 +87,7 @@ export function LineAreaChart({ categories, series, height = 220 }: Props) {
             d={linePath(s.values)}
             fill="none"
             stroke={s.color}
-            strokeWidth={2}
+            strokeWidth={1.5}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -80,10 +98,10 @@ export function LineAreaChart({ categories, series, height = 220 }: Props) {
               key={`${s.key}-dot-${i}`}
               cx={x(i)}
               cy={y(v)}
-              r={hover === i ? 5 : 4}
+              r={hover === i ? 4 : 2.5}
               fill={s.color}
               stroke="var(--color-surface)"
-              strokeWidth={2}
+              strokeWidth={1.5}
             />
           )),
         )}
