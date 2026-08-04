@@ -1,14 +1,57 @@
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { user, profile, loading, logout } = useAuth();
+  const [showEscapeHatch, setShowEscapeHatch] = useState(false);
 
-  if (loading || (user && profile === null)) {
+  const isLoadingProfile = loading || (user && profile === null);
+
+  useEffect(() => {
+    if (!isLoadingProfile) {
+      setShowEscapeHatch(false);
+      return;
+    }
+    const t = setTimeout(() => setShowEscapeHatch(true), 8000);
+    return () => clearTimeout(t);
+  }, [isLoadingProfile]);
+
+  if (isLoadingProfile) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-        Načítavam…
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 14,
+          height: '100vh',
+          textAlign: 'center',
+          padding: 20,
+        }}
+      >
+        <div>Načítavam…</div>
+        {showEscapeHatch && (
+          <>
+            <p style={{ maxWidth: 380, color: 'var(--color-text-muted)', fontSize: 13 }}>
+              Načítanie trvá dlhšie, ako by malo. Skúste sa odhlásiť a prihlásiť znova.
+            </p>
+            <button
+              onClick={() => logout()}
+              style={{
+                padding: '10px 20px',
+                background: 'var(--color-primary)',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: 700,
+              }}
+            >
+              Odhlásiť sa
+            </button>
+          </>
+        )}
       </div>
     );
   }

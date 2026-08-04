@@ -42,28 +42,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    const unsub = onSnapshot(doc(db, 'users', user.uid), async (snap) => {
-      if (snap.exists() && snap.data().role === 'klient') {
-        setProfile({
-          role: 'klient',
-          customerId: snap.data().customerId,
-          customerName: snap.data().customerName,
-          firstName: snap.data().firstName ?? '',
-          lastName: snap.data().lastName ?? '',
-        });
-        return;
-      }
-      if (!user.email) {
+    const unsub = onSnapshot(
+      doc(db, 'users', user.uid),
+      async (snap) => {
+        if (snap.exists() && snap.data().role === 'klient') {
+          setProfile({
+            role: 'klient',
+            customerId: snap.data().customerId,
+            customerName: snap.data().customerName,
+            firstName: snap.data().firstName ?? '',
+            lastName: snap.data().lastName ?? '',
+          });
+          return;
+        }
+        if (!user.email) {
+          setProfile({ role: 'unauthorized' });
+          return;
+        }
+        try {
+          const allowlistSnap = await getDoc(doc(db, 'agentAllowlist', user.email.toLowerCase()));
+          if (allowlistSnap.exists()) {
+            setProfile({ role: 'agent', master: allowlistSnap.data().master === true });
+          } else {
+            setProfile({ role: 'unauthorized' });
+          }
+        } catch {
+          // If the allowlist read itself fails (e.g. permission-denied for
+          // an account that isn't an agent), fall back to "unauthorized"
+          // instead of leaving profile stuck at null forever.
+          setProfile({ role: 'unauthorized' });
+        }
+      },
+      () => {
+        // The users/{uid} listener itself failed - same fallback, so the
+        // UI can never get stuck on a permanent loading screen.
         setProfile({ role: 'unauthorized' });
-        return;
-      }
-      const allowlistSnap = await getDoc(doc(db, 'agentAllowlist', user.email.toLowerCase()));
-      if (allowlistSnap.exists()) {
-        setProfile({ role: 'agent', master: allowlistSnap.data().master === true });
-      } else {
-        setProfile({ role: 'unauthorized' });
-      }
-    });
+      },
+    );
     return unsub;
   }, [user]);
 
