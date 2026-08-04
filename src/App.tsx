@@ -22,6 +22,8 @@ import { TodayTicketsPage } from './pages/TodayTickets';
 import { UnassignedTicketsPage } from './pages/UnassignedTickets';
 import { SettingsHubPage } from './pages/SettingsHub';
 import { ProfilePage } from './pages/Profile';
+import { LiveChatInboxPage } from './pages/LiveChatInbox';
+import { GeneralSettingsPage } from './pages/GeneralSettings';
 
 function App() {
   return (
@@ -129,6 +131,22 @@ function App() {
               element={
                 <AgentOnlyRoute>
                   <ProfilePage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="livechat"
+              element={
+                <AgentOnlyRoute>
+                  <LiveChatInboxPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="general-settings"
+              element={
+                <AgentOnlyRoute>
+                  <GeneralSettingsPage />
                 </AgentOnlyRoute>
               }
             />

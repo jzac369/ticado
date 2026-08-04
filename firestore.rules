@@ -69,6 +69,34 @@ service cloud.firestore {
       }
     }
 
+    // Slim public-facing shard of a ticket (code, subject, status, priority,
+    // hasAgent flag) used by the /support "check status" lookup so visitors
+    // can find their ticket by code without exposing full ticket data
+    // (requester email, description, customer name) to anyone who guesses
+    // a sequential code. Written/kept in sync from tickets.ts whenever a
+    // ticket is created or its status/assignment changes.
+    match /ticketLookup/{code} {
+      allow read: if true;
+      allow create: if true;
+      allow update: if isAgent();
+    }
+
+    // Anonymous live chat: the chat/message document IDs are Firestore's
+    // random auto-IDs, acting as an unguessable capability token so a
+    // visitor who has one can read/write only that conversation. Only
+    // agents can list the full inbox.
+    match /liveChats/{chatId} {
+      allow get: if true;
+      allow list: if isAgent();
+      allow create: if true;
+      allow update: if true;
+
+      match /messages/{messageId} {
+        allow read: if true;
+        allow create: if true;
+      }
+    }
+
     // The public intake form lists existing companies in a read-only
     // dropdown (it cannot create new ones). Note: this makes customer
     // records (name, contact, email) publicly readable via the API,

@@ -24,6 +24,7 @@ interface TabItem {
 const agentIcons: IconItem[] = [
   { label: 'Tickety', icon: '🎫', to: '/tickets' },
   { label: 'Zákazníci', icon: '📇', to: '/customers' },
+  { label: 'Live chat', icon: '💬', to: '/livechat' },
   { label: 'Reporty', icon: '📊', to: '/analytics' },
   { label: 'Nastavenia', icon: '⚙️', to: '/settings-hub' },
   { label: 'Pomoc', icon: '📖', to: '/legend' },

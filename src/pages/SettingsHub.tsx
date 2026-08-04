@@ -6,6 +6,8 @@ const CARDS = [
   { title: 'Banner pre klientov', desc: 'Oznámenie o odstávke alebo dôležitej správe.', to: '/announcement', icon: '📢' },
   { title: 'Analytika technikov', desc: 'Reakčný čas a rebríček výkonnosti.', to: '/analytics', icon: '📊' },
   { title: 'Zákazníci', desc: 'Zoznam firiem a ich kolegov (klientske účty).', to: '/customers', icon: '📇' },
+  { title: 'Live chat', desc: 'Konverzácie z podpornej stránky, zapnutie/vypnutie widgetu.', to: '/livechat', icon: '💬' },
+  { title: 'Všeobecné nastavenia', desc: 'Uvítacie texty a hodiny podpory na /support.', to: '/general-settings', icon: '🧩' },
   { title: 'Môj profil', desc: 'Prepojenie vášho účtu s technikom.', to: '/profile', icon: '👤' },
 ];
 

@@ -3,6 +3,7 @@ import {
   collection,
   collectionGroup,
   doc,
+  getDoc,
   getDocs,
   limit,
   onSnapshot,
@@ -10,12 +11,25 @@ import {
   query,
   runTransaction,
   serverTimestamp,
+  setDoc,
   updateDoc,
   where,
+  type Timestamp,
 } from 'firebase/firestore';
 import { db } from './config';
 import { uploadAttachments } from './attachments';
 import type { Attachment, Ticket, TicketMessage, TicketPriority, TicketStatus, ActivityEntry } from '../types';
+
+export interface TicketLookup {
+  ticketId: string;
+  code: string;
+  subject: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  hasAgent: boolean;
+  createdAt: Timestamp | null;
+  updatedAt: Timestamp | null;
+}
 
 const ticketsCol = collection(db, 'tickets');
 
@@ -136,6 +150,17 @@ export async function createTicket(input: NewTicketInput) {
     closedAt: null,
   });
 
+  await setDoc(doc(db, 'ticketLookup', code), {
+    ticketId: docRef.id,
+    code,
+    subject: input.subject,
+    status: 'otvoreny' as TicketStatus,
+    priority: input.priority,
+    hasAgent: Boolean(assignedTo),
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+
   if (assignedTo) {
     await addDoc(collection(db, 'tickets', docRef.id, 'activity'), {
       ticketId: docRef.id,
@@ -168,6 +193,14 @@ export async function createTicket(input: NewTicketInput) {
   return { id: docRef.id, code };
 }
 
+async function syncTicketLookup(ticketId: string, patch: Partial<Omit<TicketLookup, 'ticketId' | 'code' | 'createdAt'>>) {
+  const snap = await getDoc(doc(db, 'tickets', ticketId));
+  if (!snap.exists()) return;
+  const code = snap.data().code as string;
+  if (!code) return;
+  await setDoc(doc(db, 'ticketLookup', code), { ...patch, updatedAt: serverTimestamp() }, { merge: true });
+}
+
 export async function updateTicketStatus(ticketId: string, status: TicketStatus, actor: string) {
   const updates: Record<string, unknown> = { status, updatedAt: serverTimestamp() };
   if (status === 'uzavrety') {
@@ -182,6 +215,7 @@ export async function updateTicketStatus(ticketId: string, status: TicketStatus,
     actor,
     createdAt: serverTimestamp(),
   });
+  await syncTicketLookup(ticketId, { status });
 }
 
 export async function updateTicketAssignment(ticketId: string, assignedTo: string | null, actor: string) {
@@ -192,6 +226,41 @@ export async function updateTicketAssignment(ticketId: string, assignedTo: strin
     actor,
     createdAt: serverTimestamp(),
   });
+  await syncTicketLookup(ticketId, { hasAgent: Boolean(assignedTo) });
+}
+
+export async function lookupTicketByCode(code: string): Promise<TicketLookup | null> {
+  const snap = await getDoc(doc(db, 'ticketLookup', code.trim().toUpperCase()));
+  return snap.exists() ? (snap.data() as TicketLookup) : null;
+}
+
+export async function sendPublicFollowUp(
+  lookup: TicketLookup,
+  input: { name: string; email: string; body: string },
+) {
+  if (lookup.hasAgent) {
+    await addDoc(collection(db, 'tickets', lookup.ticketId, 'messages'), {
+      ticketId: lookup.ticketId,
+      authorName: input.name,
+      authorEmail: input.email,
+      body: input.body,
+      isPrivate: false,
+      createdAt: serverTimestamp(),
+    });
+    await addDoc(collection(db, 'tickets', lookup.ticketId, 'activity'), {
+      ticketId: lookup.ticketId,
+      text: 'Nová odpoveď v komunikácii',
+      actor: input.name,
+      createdAt: serverTimestamp(),
+    });
+  } else {
+    await addDoc(collection(db, 'tickets', lookup.ticketId, 'activity'), {
+      ticketId: lookup.ticketId,
+      text: `Doplňujúca otázka od klienta (čaká na pridelenie technika): ${input.body}`,
+      actor: input.name,
+      createdAt: serverTimestamp(),
+    });
+  }
 }
 
 export async function updateTicketTags(ticketId: string, tags: string[]) {

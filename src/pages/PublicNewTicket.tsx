@@ -1,12 +1,17 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { createTicket } from '../firebase/tickets';
 import { subscribeCustomers } from '../firebase/customers';
+import { subscribeGeneralSettings, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
 import type { Customer, TicketPriority } from '../types';
 import { PRIORITY_LABELS } from '../types';
 import { Logo } from '../components/Logo';
 import { AnnouncementBanner } from '../components/AnnouncementBanner';
+import { TicketStatusLookup } from '../components/TicketStatusLookup';
+import { LiveChatWidget } from '../components/LiveChatWidget';
 
 const CATEGORIES = ['Infra', 'Security', 'Sieť', 'Backup', 'Aplikácie', 'Hardvér', 'Iné'];
+
+type SupportView = 'landing' | 'report' | 'status';
 
 function emptyForm() {
   return {
@@ -22,6 +27,7 @@ function emptyForm() {
 }
 
 export function PublicNewTicketPage() {
+  const [view, setView] = useState<SupportView>('landing');
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [form, setForm] = useState(emptyForm());
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -30,8 +36,10 @@ export function PublicNewTicketPage() {
   const [error, setError] = useState<string | null>(null);
   const [createdCode, setCreatedCode] = useState<string | null>(null);
   const [lastEmail, setLastEmail] = useState('');
+  const [settings, setSettings] = useState<GeneralSettings>(DEFAULT_GENERAL_SETTINGS);
 
   useEffect(() => subscribeCustomers(setCustomers), []);
+  useEffect(() => subscribeGeneralSettings(setSettings), []);
 
   function set<K extends keyof ReturnType<typeof emptyForm>>(key: K, value: ReturnType<typeof emptyForm>[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -127,7 +135,84 @@ export function PublicNewTicketPage() {
 
       <div style={{ width: '100%', maxWidth: 640 }}>
         <AnnouncementBanner />
-        {createdCode ? (
+
+        {view === 'landing' && (
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: 40,
+              textAlign: 'center',
+              boxShadow: 'var(--shadow-lg)',
+            }}
+          >
+            <h1 style={{ fontSize: 24, margin: '0 0 8px' }}>{settings.supportWelcomeTitle}</h1>
+            <p style={{ color: 'var(--color-text-muted)', fontSize: 14, margin: '0 auto 28px', maxWidth: 420 }}>
+              {settings.supportWelcomeSubtitle}
+            </p>
+            <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setView('report')}
+                style={{
+                  padding: '14px 24px',
+                  background: 'var(--color-primary)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 'var(--radius-md)',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  minWidth: 220,
+                }}
+              >
+                🆘 Nahlásiť problém
+              </button>
+              <button
+                onClick={() => setView('status')}
+                style={{
+                  padding: '14px 24px',
+                  background: 'var(--color-surface)',
+                  color: 'var(--color-text)',
+                  border: '1.5px solid var(--color-border)',
+                  borderRadius: 'var(--radius-md)',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  minWidth: 220,
+                }}
+              >
+                🔍 Skontrolovať stav požiadavky
+              </button>
+            </div>
+            {settings.supportHours && (
+              <p style={{ marginTop: 24, fontSize: 12, color: 'var(--color-text-faint)' }}>
+                Prevádzkové hodiny podpory: {settings.supportHours}
+              </p>
+            )}
+          </div>
+        )}
+
+        {view === 'status' && (
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: 32,
+              boxShadow: 'var(--shadow-lg)',
+            }}
+          >
+            <button onClick={() => setView('landing')} style={backLinkStyle}>
+              ← Späť
+            </button>
+            <h1 style={{ fontSize: 22, margin: '10px 0 4px' }}>Skontrolovať stav požiadavky</h1>
+            <p style={{ margin: '0 0 24px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
+              Zadajte číslo ticketu, ktoré ste dostali pri nahlásení problému.
+            </p>
+            <TicketStatusLookup />
+          </div>
+        )}
+
+        {view === 'report' && (createdCode ? (
           <div
             style={{
               background: 'var(--color-surface)',
@@ -150,9 +235,14 @@ export function PublicNewTicketPage() {
               Ozveme sa vám na email <strong>{lastEmail}</strong>. Uschovajte si prosím toto číslo pre prípad ďalšej
               komunikácie.
             </p>
-            <button onClick={resetForSubmitAnother} style={secondaryBtn}>
-              + Nahlásiť ďalší problém
-            </button>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+              <button onClick={resetForSubmitAnother} style={secondaryBtn}>
+                + Nahlásiť ďalší problém
+              </button>
+              <button onClick={() => setView('landing')} style={secondaryBtn}>
+                ← Späť na úvod
+              </button>
+            </div>
           </div>
         ) : (
           <form
@@ -165,7 +255,10 @@ export function PublicNewTicketPage() {
               boxShadow: 'var(--shadow-lg)',
             }}
           >
-            <h1 style={{ fontSize: 22, margin: '0 0 4px' }}>Nahlásiť problém</h1>
+            <button type="button" onClick={() => setView('landing')} style={backLinkStyle}>
+              ← Späť
+            </button>
+            <h1 style={{ fontSize: 22, margin: '10px 0 4px' }}>Nahlásiť problém</h1>
             <p style={{ margin: '0 0 24px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
               Vyplňte formulár nižšie a náš tím sa vám čo najskôr ozve. Registrácia nie je potrebná.
             </p>
@@ -354,8 +447,10 @@ export function PublicNewTicketPage() {
               {submitting ? 'Odosielam…' : 'Odoslať požiadavku'}
             </button>
           </form>
-        )}
+        ))}
       </div>
+
+      {settings.liveChatEnabled && <LiveChatWidget />}
     </div>
   );
 }
@@ -393,4 +488,14 @@ const secondaryBtn: CSSProperties = {
   background: 'var(--color-surface)',
   fontWeight: 700,
   fontSize: 13.5,
+};
+
+const backLinkStyle: CSSProperties = {
+  background: 'none',
+  border: 'none',
+  color: 'var(--color-text-muted)',
+  fontSize: 12.5,
+  fontWeight: 600,
+  padding: 0,
+  cursor: 'pointer',
 };
