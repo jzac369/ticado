@@ -233,6 +233,17 @@ export async function updateTicketAssignment(ticketId: string, assignedTo: strin
   await syncTicketLookup(ticketId, { hasAgent: Boolean(assignedTo) });
 }
 
+export async function updateTicketPriority(ticketId: string, priority: TicketPriority, actor: string) {
+  await updateDoc(doc(db, 'tickets', ticketId), { priority, updatedAt: serverTimestamp() });
+  await addDoc(collection(db, 'tickets', ticketId, 'activity'), {
+    ticketId,
+    text: `Priorita zmenená na "${priority}"`,
+    actor,
+    createdAt: serverTimestamp(),
+  });
+  await syncTicketLookup(ticketId, { priority });
+}
+
 /**
  * Fetches the public ticket shard for the given code and verifies the
  * caller-supplied email against the requester's email on file. The shard

@@ -1,20 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { subscribeTickets } from '../firebase/tickets';
+import { Icon } from './Icon';
 import type { Ticket } from '../types';
 
 interface AlertMsg {
   text: string;
-  tone: 'info' | 'warning' | 'danger' | 'good';
+  icon: 'user' | 'flag' | 'clock' | 'inbox' | 'check';
   to?: string;
 }
-
-const TONE_COLORS: Record<AlertMsg['tone'], { fg: string; bg: string }> = {
-  info: { fg: 'var(--color-info)', bg: 'var(--color-info-bg)' },
-  warning: { fg: 'var(--color-warning)', bg: 'var(--color-warning-bg)' },
-  danger: { fg: 'var(--color-danger)', bg: 'var(--color-danger-bg)' },
-  good: { fg: 'var(--color-success)', bg: 'var(--color-success-bg)' },
-};
 
 const ROTATE_MS = 4500;
 
@@ -40,36 +34,36 @@ export function AlertTicker() {
     const msgs: AlertMsg[] = [];
     if (unassigned > 0) {
       msgs.push({
-        text: `⚠ ${unassigned} ${unassigned === 1 ? 'ticket čaká' : 'ticketov čaká'} na priradenie technikovi`,
-        tone: 'warning',
-        to: '/tickets',
+        text: `${unassigned} ${unassigned === 1 ? 'ticket čaká' : 'ticketov čaká'} na priradenie technikovi`,
+        icon: 'user',
+        to: '/unassigned',
       });
     }
     if (critical > 0) {
       msgs.push({
-        text: `🔥 ${critical} kritických ticketov je momentálne otvorených`,
-        tone: 'danger',
+        text: `${critical} kritických ticketov je momentálne otvorených`,
+        icon: 'flag',
         to: '/tickets',
       });
     }
     if (waiting > 0) {
-      msgs.push({ text: `⏳ ${waiting} ${waiting === 1 ? 'ticket čaká' : 'ticketov čaká'} na odpoveď klienta`, tone: 'info', to: '/tickets' });
+      msgs.push({ text: `${waiting} ${waiting === 1 ? 'ticket čaká' : 'ticketov čaká'} na odpoveď klienta`, icon: 'clock', to: '/tickets' });
     }
     if (stale > 0) {
       msgs.push({
-        text: `🕒 ${stale} ${stale === 1 ? 'ticket nemá' : 'ticketov nemá'} aktivitu viac ako 24 hodín`,
-        tone: 'warning',
+        text: `${stale} ${stale === 1 ? 'ticket nemá' : 'ticketov nemá'} aktivitu viac ako 24 hodín`,
+        icon: 'clock',
         to: '/tickets',
       });
     }
     if (createdToday > 0) {
-      msgs.push({ text: `📥 Dnes pribudlo ${createdToday} nových ticketov`, tone: 'info' });
+      msgs.push({ text: `Dnes pribudlo ${createdToday} nových ticketov`, icon: 'inbox', to: '/today' });
     }
     if (closedToday > 0) {
-      msgs.push({ text: `✅ Dnes bolo vyriešených ${closedToday} ticketov`, tone: 'good' });
+      msgs.push({ text: `Dnes bolo vyriešených ${closedToday} ticketov`, icon: 'check' });
     }
     if (msgs.length === 0) {
-      msgs.push({ text: '✅ Všetky tickety sú priradené a pod kontrolou', tone: 'good' });
+      msgs.push({ text: 'Všetky tickety sú priradené a pod kontrolou', icon: 'check' });
     }
     return msgs.slice(0, 5);
   }, [tickets]);
@@ -86,7 +80,6 @@ export function AlertTicker() {
 
   const current = messages[index];
   if (!current) return null;
-  const colors = TONE_COLORS[current.tone];
 
   return (
     <div
@@ -98,8 +91,8 @@ export function AlertTicker() {
         gap: 8,
         padding: '5px 14px',
         borderRadius: 999,
-        background: colors.bg,
-        color: colors.fg,
+        background: 'var(--color-primary-bg)',
+        color: 'var(--color-primary)',
         fontSize: 12.5,
         fontWeight: 600,
         cursor: current.to ? 'pointer' : 'default',
@@ -109,7 +102,8 @@ export function AlertTicker() {
         textOverflow: 'ellipsis',
       }}
     >
-      <span>{current.text}</span>
+      <Icon name={current.icon} size={13} />
+      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{current.text}</span>
       {messages.length > 1 && (
         <span style={{ display: 'flex', gap: 3, marginLeft: 'auto', flexShrink: 0 }}>
           {messages.map((_, i) => (
@@ -119,7 +113,7 @@ export function AlertTicker() {
                 width: 5,
                 height: 5,
                 borderRadius: '50%',
-                background: i === index ? colors.fg : 'rgba(0,0,0,0.15)',
+                background: i === index ? 'var(--color-primary)' : 'rgba(139,41,66,0.2)',
               }}
             />
           ))}

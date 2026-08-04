@@ -8,10 +8,11 @@ import {
   subscribeTicket,
   unarchiveTicket,
   updateTicketAssignment,
+  updateTicketPriority,
   updateTicketStatus,
   updateTicketTags,
 } from '../firebase/tickets';
-import type { ActivityEntry, Attachment, Ticket, TicketMessage, TicketStatus } from '../types';
+import type { ActivityEntry, Attachment, Ticket, TicketMessage, TicketPriority, TicketStatus } from '../types';
 import { STATUS_LABELS, PRIORITY_LABELS, CHANNEL_LABELS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { PriorityBadge, StatusBadge } from '../components/Badges';
@@ -19,6 +20,7 @@ import { subscribeAgents, type Agent } from '../firebase/agents';
 import { uploadAttachments } from '../firebase/attachments';
 import { subscribeTemplates, type ReplyTemplate } from '../firebase/templates';
 import { TicketTimeline } from '../components/TicketTimeline';
+import { Icon } from '../components/Icon';
 
 function fmt(ts: TicketMessage['createdAt']) {
   if (!ts) return '';
@@ -68,7 +70,7 @@ function AttachmentList({ attachments }: { attachments?: Attachment[] }) {
               color: 'var(--color-text)',
             }}
           >
-            📎 {a.name} <span style={{ color: 'var(--color-text-faint)' }}>({formatSize(a.size)})</span>
+            <Icon name="paperclip" size={12} /> {a.name} <span style={{ color: 'var(--color-text-faint)' }}>({formatSize(a.size)})</span>
           </a>
         ),
       )}
@@ -184,6 +186,11 @@ export function TicketDetailPage() {
     await updateTicketAssignment(id, value || null, actorName);
   }
 
+  async function handlePriorityChange(value: TicketPriority) {
+    if (!id) return;
+    await updateTicketPriority(id, value, actorName);
+  }
+
   async function handleArchiveToggle() {
     if (!id) return;
     if (ticket?.archived) {
@@ -227,6 +234,9 @@ export function TicketDetailPage() {
             {ticket.archived && (
               <span
                 style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
                   fontSize: 11,
                   fontWeight: 600,
                   color: 'var(--color-text-faint)',
@@ -235,7 +245,7 @@ export function TicketDetailPage() {
                   padding: '2px 9px',
                 }}
               >
-                🗄 Archivovaný
+                <Icon name="archive" size={11} /> Archivovaný
               </span>
             )}
           </h1>
@@ -246,34 +256,14 @@ export function TicketDetailPage() {
         </div>
         <div className="no-print" style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           {!isClient && (
-            <button
-              onClick={handleArchiveToggle}
-              style={{
-                padding: '7px 14px',
-                border: '1px solid var(--color-border)',
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--color-surface)',
-                fontSize: 12.5,
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-              }}
-            >
-              {ticket.archived ? '📤 Obnoviť z archívu' : '🗄 Archivovať'}
+            <button onClick={handleArchiveToggle} style={outlineBtnStyle}>
+              <Icon name={ticket.archived ? 'download' : 'archive'} size={14} />
+              {ticket.archived ? 'Obnoviť z archívu' : 'Archivovať'}
             </button>
           )}
-          <button
-            onClick={() => window.print()}
-            style={{
-              padding: '7px 14px',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--color-surface)',
-              fontSize: 12.5,
-              fontWeight: 600,
-              whiteSpace: 'nowrap',
-            }}
-          >
-            🖨 Tlačiť / PDF
+          <button onClick={() => window.print()} style={outlineBtnStyle}>
+            <Icon name="printer" size={14} />
+            Tlačiť / PDF
           </button>
         </div>
       </div>
@@ -310,7 +300,10 @@ export function TicketDetailPage() {
             padding: 20,
           }}
         >
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>💬 Komunikácia</div>
+          <div style={{ fontWeight: 700, marginBottom: 4, display: 'flex', alignItems: 'center', gap: 7 }}>
+            <Icon name="message" size={15} style={{ color: 'var(--color-primary)' }} />
+            Komunikácia
+          </div>
           <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)', marginBottom: 16 }}>
             {visibleMessages.length} správ a poznámok v tickete
           </div>
@@ -383,7 +376,10 @@ export function TicketDetailPage() {
           }}
           className="no-print"
         >
-          <div style={{ fontWeight: 700, marginBottom: 12 }}>✎ Odpovedať</div>
+          <div style={{ fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 7 }}>
+            <Icon name="edit" size={15} style={{ color: 'var(--color-primary)' }} />
+            Odpovedať
+          </div>
           {!closed ? (
             <form onSubmit={handleReply}>
               {!isClient && templates.length > 0 && (
@@ -392,6 +388,9 @@ export function TicketDetailPage() {
                     type="button"
                     onClick={() => setTemplateMenuOpen((v) => !v)}
                     style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
                       padding: '6px 12px',
                       border: '1px solid var(--color-border)',
                       borderRadius: 'var(--radius-md)',
@@ -401,7 +400,7 @@ export function TicketDetailPage() {
                       cursor: 'pointer',
                     }}
                   >
-                    📋 Šablóny odpovedí ▾
+                    <Icon name="list" size={13} /> Šablóny odpovedí ▾
                   </button>
                   {templateMenuOpen && (
                     <div
@@ -527,7 +526,7 @@ export function TicketDetailPage() {
                           borderRadius: 'var(--radius-sm)',
                         }}
                       >
-                        📎 {f.name}
+                        <Icon name="paperclip" size={12} /> {f.name}
                         <button
                           type="button"
                           onClick={() => removeFile(i)}
@@ -544,6 +543,9 @@ export function TicketDetailPage() {
               {attachError && (
                 <div
                   style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
                     marginTop: 10,
                     padding: '8px 12px',
                     background: 'var(--color-danger-bg)',
@@ -554,7 +556,7 @@ export function TicketDetailPage() {
                     fontWeight: 600,
                   }}
                 >
-                  ⚠ {attachError}
+                  <Icon name="alertTriangle" size={14} /> {attachError}
                 </div>
               )}
 
@@ -587,6 +589,10 @@ export function TicketDetailPage() {
           ) : (
             <div
               style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 6,
                 marginTop: 20,
                 padding: 12,
                 textAlign: 'center',
@@ -595,7 +601,7 @@ export function TicketDetailPage() {
                 borderTop: '1px solid var(--color-border)',
               }}
             >
-              🔒 Tento ticket je uzavretý.
+              <Icon name="lock" size={14} /> Tento ticket je uzavretý.
             </div>
           )}
         </div>
@@ -603,8 +609,14 @@ export function TicketDetailPage() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Panel title="ℹ️ Detaily ticketu">
-            <DetailRow icon="✓" label="Stav ticketu" first>
+          <Panel
+            title={
+              <>
+                <Icon name="info" size={15} style={{ color: 'var(--color-primary)' }} /> Detaily ticketu
+              </>
+            }
+          >
+            <DetailRow icon={<Icon name="check" size={14} />} label="Stav ticketu" first>
               {isClient ? (
                 <span style={{ fontWeight: 600, fontSize: 13.5 }}>{STATUS_LABELS[ticket.status]}</span>
               ) : (
@@ -622,17 +634,32 @@ export function TicketDetailPage() {
                 </select>
               )}
             </DetailRow>
-            <DetailRow icon="🚩" label="Priorita">
-              <span style={{ fontWeight: 600, fontSize: 13.5 }}>{PRIORITY_LABELS[ticket.priority]}</span>
+            <DetailRow icon={<Icon name="flag" size={14} />} label="Priorita">
+              {isClient ? (
+                <span style={{ fontWeight: 600, fontSize: 13.5 }}>{PRIORITY_LABELS[ticket.priority]}</span>
+              ) : (
+                <select
+                  value={ticket.priority}
+                  onChange={(e) => handlePriorityChange(e.target.value as TicketPriority)}
+                  className="no-print"
+                  style={inlineSelectStyle}
+                >
+                  {Object.entries(PRIORITY_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              )}
             </DetailRow>
-            <DetailRow icon="🌐" label="Kanál">
+            <DetailRow icon={<Icon name="globe" size={14} />} label="Kanál">
               <span style={{ fontWeight: 600, fontSize: 13.5 }}>{CHANNEL_LABELS[ticket.channel]}</span>
             </DetailRow>
-            <DetailRow icon="📅" label="Vytvorený">
+            <DetailRow icon={<Icon name="calendar" size={14} />} label="Vytvorený">
               <span style={{ fontWeight: 600, fontSize: 13.5 }}>{fmt(ticket.createdAt)}</span>
             </DetailRow>
             {!isClient && (
-              <DetailRow icon="👤" label="Priradenie">
+              <DetailRow icon={<Icon name="user" size={14} />} label="Priradenie">
                 <select
                   value={ticket.assignedTo ?? ''}
                   onChange={(e) => handleAssign(e.target.value)}
@@ -648,7 +675,7 @@ export function TicketDetailPage() {
                 </select>
               </DetailRow>
             )}
-            <DetailRow icon="🧑" label="Žiadateľ" align="start">
+            <DetailRow icon={<Icon name="users" size={14} />} label="Žiadateľ" align="start">
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <div
                   style={{
@@ -680,7 +707,7 @@ export function TicketDetailPage() {
               </div>
             </DetailRow>
             {!isClient && (
-              <DetailRow icon="🏷" label="Štítky" align="start">
+              <DetailRow icon={<Icon name="tag" size={14} />} label="Štítky" align="start">
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
                   {(ticket.tags?.length ?? 0) > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'flex-end' }}>
@@ -735,7 +762,13 @@ export function TicketDetailPage() {
             )}
           </Panel>
 
-          <Panel title="🕐 História zmien">
+          <Panel
+            title={
+              <>
+                <Icon name="clock" size={15} style={{ color: 'var(--color-primary)' }} /> História zmien
+              </>
+            }
+          >
             <TicketTimeline entries={activity.slice(0, 12)} />
           </Panel>
         </div>
@@ -744,7 +777,7 @@ export function TicketDetailPage() {
   );
 }
 
-function Panel({ title, children }: { title: string; children: ReactNode }) {
+function Panel({ title, children }: { title: ReactNode; children: ReactNode }) {
   return (
     <div
       style={{
@@ -754,7 +787,9 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
         padding: 16,
       }}
     >
-      <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 12 }}>{title}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 13.5, marginBottom: 12 }}>
+        {title}
+      </div>
       {children}
     </div>
   );
@@ -782,7 +817,7 @@ function DetailRow({
   align = 'center',
   first = false,
 }: {
-  icon: string;
+  icon: ReactNode;
   label: string;
   children: ReactNode;
   align?: 'center' | 'start';
@@ -800,10 +835,10 @@ function DetailRow({
       }}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: 'var(--color-text-muted)', flexShrink: 0 }}>
-        <span>{icon}</span>
+        {icon}
         {label}
       </div>
-      <div style={{ textAlign: 'right' }}>{children}</div>
+      <div>{children}</div>
     </div>
   );
 }
@@ -821,7 +856,22 @@ const inlineSelectStyle: CSSProperties = {
   background: 'none',
   fontWeight: 600,
   fontSize: 13.5,
-  textAlign: 'right',
+  textAlign: 'center',
+  textAlignLast: 'center',
   cursor: 'pointer',
   color: 'var(--color-text)',
+};
+
+const outlineBtnStyle: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 7,
+  padding: '7px 14px',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-md)',
+  background: 'var(--color-surface)',
+  fontSize: 12.5,
+  fontWeight: 600,
+  whiteSpace: 'nowrap',
+  cursor: 'pointer',
 };
