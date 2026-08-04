@@ -35,7 +35,7 @@ export function DashboardPage() {
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => subscribeTickets(setTickets), []);
+  useEffect(() => subscribeTickets((data) => setTickets(data.filter((t) => !t.archived))), []);
   useEffect(() => subscribeGlobalActivity(setActivity, 10), []);
   useEffect(() => subscribeRecentMessages(setMessages, 300), []);
 
@@ -119,7 +119,7 @@ export function DashboardPage() {
     <div>
       <h1 style={{ fontSize: 19, margin: '0 0 2px' }}>Dashboard</h1>
       <p style={{ margin: '0 0 10px', color: 'var(--color-text-muted)', fontSize: 12 }}>
-        Rýchly prehľad prevádzky ServiceDesku.
+        Rýchly prehľad prevádzky technickej podpory.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 8 }}>

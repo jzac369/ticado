@@ -13,7 +13,7 @@ export function ClientTicketsPage({ customerId, customerName }: { customerId: st
   useEffect(() => {
     const q = query(collection(db, 'tickets'), where('customerId', '==', customerId), orderBy('createdAt', 'desc'));
     return onSnapshot(q, (snap) => {
-      setTickets(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Ticket));
+      setTickets(snap.docs.map((d) => ({ id: d.id, ...d.data() }) as Ticket).filter((t) => !t.archived));
     });
   }, [customerId]);
 

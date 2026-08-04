@@ -10,7 +10,7 @@ export function Logo({ size = 32, withWordmark = true }: { size?: number; withWo
       />
       {withWordmark && (
         <span style={{ fontWeight: 700, fontSize: size * 0.56, letterSpacing: -0.3, color: 'var(--color-text)' }}>
-          Ticado
+          RONA <span style={{ fontWeight: 500, opacity: 0.75 }}>Technická podpora</span>
         </span>
       )}
     </div>

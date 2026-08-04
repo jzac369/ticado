@@ -20,6 +20,7 @@ import { AnalyticsPage } from './pages/Analytics';
 import { MyTicketsPage } from './pages/MyTickets';
 import { TodayTicketsPage } from './pages/TodayTickets';
 import { UnassignedTicketsPage } from './pages/UnassignedTickets';
+import { ArchivedTicketsPage } from './pages/ArchivedTickets';
 import { SettingsHubPage } from './pages/SettingsHub';
 import { ProfilePage } from './pages/Profile';
 import { LiveChatInboxPage } from './pages/LiveChatInbox';
@@ -115,6 +116,14 @@ function App() {
               element={
                 <AgentOnlyRoute>
                   <UnassignedTicketsPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="archived"
+              element={
+                <AgentOnlyRoute>
+                  <ArchivedTicketsPage />
                 </AgentOnlyRoute>
               }
             />

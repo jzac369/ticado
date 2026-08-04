@@ -6,7 +6,8 @@ export type LiveChatStatus = 'otvoreny' | 'uzavrety';
 export interface LiveChat {
   id: string;
   visitorName: string;
-  visitorEmail?: string;
+  visitorEmail: string;
+  ticketCode?: string;
   status: LiveChatStatus;
   createdAt: Timestamp | null;
   lastMessageAt: Timestamp | null;
@@ -45,10 +46,11 @@ export function subscribeChatMessages(chatId: string, callback: (messages: ChatM
   });
 }
 
-export async function createLiveChat(visitorName: string, visitorEmail?: string) {
+export async function createLiveChat(visitorName: string, visitorEmail: string, ticketCode?: string) {
   const ref = await addDoc(chatsCol, {
     visitorName,
-    visitorEmail: visitorEmail ?? '',
+    visitorEmail: visitorEmail.trim().toLowerCase(),
+    ticketCode: ticketCode ? ticketCode.trim().toUpperCase() : '',
     status: 'otvoreny' as LiveChatStatus,
     createdAt: serverTimestamp(),
     lastMessageAt: serverTimestamp(),

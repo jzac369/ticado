@@ -8,7 +8,7 @@ export function UnassignedTicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const navigate = useNavigate();
 
-  useEffect(() => subscribeTickets(setTickets), []);
+  useEffect(() => subscribeTickets((data) => setTickets(data.filter((t) => !t.archived))), []);
 
   const unassigned = useMemo(
     () => tickets.filter((t) => !t.assignedTo && t.status !== 'uzavrety'),

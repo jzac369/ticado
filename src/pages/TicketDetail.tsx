@@ -2,9 +2,11 @@ import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode
 import { Link, useParams } from 'react-router-dom';
 import {
   addTicketMessage,
+  archiveTicket,
   subscribeActivity,
   subscribeMessages,
   subscribeTicket,
+  unarchiveTicket,
   updateTicketAssignment,
   updateTicketStatus,
   updateTicketTags,
@@ -182,6 +184,15 @@ export function TicketDetailPage() {
     await updateTicketAssignment(id, value || null, actorName);
   }
 
+  async function handleArchiveToggle() {
+    if (!id) return;
+    if (ticket?.archived) {
+      await unarchiveTicket(id, actorName);
+    } else {
+      await archiveTicket(id, actorName);
+    }
+  }
+
   const currentTags = ticket.tags ?? [];
 
   async function handleAddTag(e: FormEvent) {
@@ -210,25 +221,58 @@ export function TicketDetailPage() {
           </Link>{' '}
           / <span style={{ fontWeight: 700 }}>{ticket.code}</span>
         </div>
-        <button
-          onClick={() => window.print()}
-          className="no-print"
-          style={{
-            padding: '7px 14px',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius-md)',
-            background: 'var(--color-surface)',
-            fontSize: 12.5,
-            fontWeight: 600,
-          }}
-        >
-          🖨 Tlačiť / PDF
-        </button>
+        <div className="no-print" style={{ display: 'flex', gap: 8 }}>
+          {!isClient && (
+            <button
+              onClick={handleArchiveToggle}
+              style={{
+                padding: '7px 14px',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--color-surface)',
+                fontSize: 12.5,
+                fontWeight: 600,
+              }}
+            >
+              {ticket.archived ? '📤 Obnoviť z archívu' : '🗄 Archivovať'}
+            </button>
+          )}
+          <button
+            onClick={() => window.print()}
+            style={{
+              padding: '7px 14px',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius-md)',
+              background: 'var(--color-surface)',
+              fontSize: 12.5,
+              fontWeight: 600,
+            }}
+          >
+            🖨 Tlačiť / PDF
+          </button>
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
         <StatusBadge status={ticket.status} />
         <PriorityBadge priority={ticket.priority} />
+        {ticket.archived && (
+          <span
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '3px 10px',
+              borderRadius: 999,
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: 'var(--color-text-faint)',
+              background: 'var(--color-surface-2)',
+            }}
+          >
+            🗄 Archivovaný
+          </span>
+        )}
       </div>
 
       <h1 style={{ fontSize: 24, margin: '0 0 6px' }}>{ticket.subject}</h1>

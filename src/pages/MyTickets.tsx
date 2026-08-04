@@ -13,7 +13,7 @@ export function MyTicketsPage() {
   const navigate = useNavigate();
   const isClient = profile?.role === 'klient';
 
-  useEffect(() => subscribeTickets(setTickets), []);
+  useEffect(() => subscribeTickets((data) => setTickets(data.filter((t) => !t.archived))), []);
   useEffect(() => {
     if (isClient) return;
     return subscribeAgents(setAgents);

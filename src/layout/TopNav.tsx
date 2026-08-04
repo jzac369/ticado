@@ -6,6 +6,7 @@ import { NotificationBell } from '../components/NotificationBell';
 import { subscribeAgents, type Agent } from '../firebase/agents';
 import { subscribeTickets } from '../firebase/tickets';
 import { subscribeLiveChats, type LiveChat } from '../firebase/livechat';
+import { AlertTicker } from '../components/AlertTicker';
 import type { Ticket } from '../types';
 
 interface IconItem {
@@ -19,7 +20,7 @@ interface TabItem {
   label: string;
   to: string;
   end?: boolean;
-  countKey?: 'my' | 'all' | 'unassigned' | 'today';
+  countKey?: 'my' | 'all' | 'unassigned' | 'today' | 'archived';
 }
 
 const agentIcons: IconItem[] = [
@@ -42,6 +43,7 @@ const agentTabs: TabItem[] = [
   { label: 'Všetky tikety', to: '/tickets', countKey: 'all' },
   { label: 'Nepriradené tikety', to: '/unassigned', countKey: 'unassigned' },
   { label: 'Dnešné tikety', to: '/today', countKey: 'today' },
+  { label: 'Archivované tikety', to: '/archived', countKey: 'archived' },
 ];
 
 const clientTabs: TabItem[] = [
@@ -113,24 +115,26 @@ export function TopNav() {
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayStartMs = todayStart.getTime();
+    const active = tickets.filter((t) => !t.archived);
 
-    let myTickets = tickets;
+    let myTickets = active;
     if (profile?.role === 'klient') {
-      myTickets = tickets.filter((t) => t.requesterEmail?.toLowerCase() === user?.email?.toLowerCase());
+      myTickets = active.filter((t) => t.requesterEmail?.toLowerCase() === user?.email?.toLowerCase());
     } else if (myAgent) {
-      myTickets = tickets.filter((t) => t.assignedTo === myAgent.name);
+      myTickets = active.filter((t) => t.assignedTo === myAgent.name);
     } else {
       myTickets = [];
     }
 
     const scoped =
-      profile?.role === 'klient' ? tickets.filter((t) => t.customerId === profile.customerId) : tickets;
+      profile?.role === 'klient' ? active.filter((t) => t.customerId === profile.customerId) : active;
 
     return {
       my: myTickets.length,
-      all: tickets.length,
-      unassigned: tickets.filter((t) => !t.assignedTo && t.status !== 'uzavrety').length,
+      all: active.length,
+      unassigned: active.filter((t) => !t.assignedTo && t.status !== 'uzavrety').length,
       today: scoped.filter((t) => (t.createdAt?.toMillis() ?? 0) >= todayStartMs).length,
+      archived: tickets.filter((t) => t.archived).length,
     };
   }, [tickets, profile, user, myAgent]);
 
@@ -286,24 +290,27 @@ export function TopNav() {
             )}
           </NavLink>
         ))}
-        <button
-          onClick={() => navigate('/tickets/new')}
-          style={{
-            marginLeft: 'auto',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-            background: 'var(--color-primary)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 'var(--radius-md)',
-            padding: '7px 14px',
-            fontWeight: 700,
-            fontSize: 12.5,
-          }}
-        >
-          + Nový ticket
-        </button>
+        <div className="no-print" style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <AlertTicker />
+          <button
+            onClick={() => navigate('/tickets/new')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'var(--color-primary)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              padding: '7px 14px',
+              fontWeight: 700,
+              fontSize: 12.5,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            + Nový ticket
+          </button>
+        </div>
       </div>
     </div>
   );

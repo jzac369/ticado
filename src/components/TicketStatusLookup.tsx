@@ -1,28 +1,32 @@
 import { useState, type CSSProperties, type FormEvent } from 'react';
-import { lookupTicketByCode, sendPublicFollowUp, type TicketLookup } from '../firebase/tickets';
+import { lookupTicketByCodeAndEmail, sendPublicFollowUp, cancelTicketByVisitor, type TicketLookup } from '../firebase/tickets';
 import { StatusBadge, PriorityBadge } from './Badges';
 
 export function TicketStatusLookup() {
   const [code, setCode] = useState('');
+  const [verifyEmail, setVerifyEmail] = useState('');
   const [lookup, setLookup] = useState<TicketLookup | null>(null);
   const [searching, setSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
 
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelled, setCancelled] = useState(false);
+
   async function handleSearch(e: FormEvent) {
     e.preventDefault();
-    if (!code.trim()) return;
+    if (!code.trim() || !verifyEmail.trim()) return;
     setSearching(true);
     setNotFound(false);
     setLookup(null);
     setSent(false);
+    setCancelled(false);
     try {
-      const result = await lookupTicketByCode(code);
+      const result = await lookupTicketByCodeAndEmail(code, verifyEmail);
       if (result) setLookup(result);
       else setNotFound(true);
     } finally {
@@ -35,7 +39,7 @@ export function TicketStatusLookup() {
     if (!lookup || !name.trim() || !body.trim()) return;
     setSending(true);
     try {
-      await sendPublicFollowUp(lookup, { name: name.trim(), email: email.trim(), body: body.trim() });
+      await sendPublicFollowUp(lookup, { name: name.trim(), email: verifyEmail.trim(), body: body.trim() });
       setSent(true);
       setBody('');
     } finally {
@@ -43,20 +47,41 @@ export function TicketStatusLookup() {
     }
   }
 
+  async function handleCancel() {
+    if (!lookup) return;
+    if (!window.confirm('Naozaj chcete zrušiť tento ticket? Táto akcia sa nedá vrátiť späť.')) return;
+    setCancelling(true);
+    try {
+      await cancelTicketByVisitor(lookup);
+      setLookup({ ...lookup, status: 'uzavrety' });
+      setCancelled(true);
+    } finally {
+      setCancelling(false);
+    }
+  }
+
   return (
     <div>
-      <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+      <form onSubmit={handleSearch} style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
         <input
           value={code}
           onChange={(e) => setCode(e.target.value)}
           placeholder="Číslo ticketu, napr. TIK000123"
-          style={{ ...inputStyle, flex: 1 }}
+          style={inputStyle}
+        />
+        <input
+          type="email"
+          value={verifyEmail}
+          onChange={(e) => setVerifyEmail(e.target.value)}
+          placeholder="Emailová adresa použitá pri nahlásení *"
+          required
+          style={inputStyle}
         />
         <button
           type="submit"
           disabled={searching}
           style={{
-            padding: '0 20px',
+            padding: '10px 0',
             background: 'var(--color-primary)',
             color: '#fff',
             border: 'none',
@@ -71,7 +96,7 @@ export function TicketStatusLookup() {
 
       {notFound && (
         <div style={{ color: 'var(--color-danger)', fontSize: 13.5, marginBottom: 16 }}>
-          Ticket s týmto číslom sa nenašiel. Skontrolujte prosím zadané číslo.
+          Ticket sa nenašiel. Skontrolujte prosím číslo ticketu a emailovú adresu, ktorú ste použili pri nahlásení.
         </div>
       )}
 
@@ -93,54 +118,79 @@ export function TicketStatusLookup() {
               <PriorityBadge priority={lookup.priority} />
             </div>
             <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>
-              {lookup.hasAgent
-                ? 'Vašej požiadavke sa aktuálne venuje technik.'
-                : 'Požiadavka čaká vo fronte na priradenie technikovi.'}
+              {lookup.status === 'uzavrety'
+                ? 'Táto požiadavka je uzavretá.'
+                : lookup.hasAgent
+                  ? 'Vašej požiadavke sa aktuálne venuje technik.'
+                  : 'Požiadavka čaká vo fronte na priradenie technikovi.'}
             </div>
-          </div>
-
-          {sent ? (
-            <div style={{ color: 'var(--color-success)', fontSize: 13.5 }}>
-              ✓ Vaša správa bola odoslaná{lookup.hasAgent ? ' technikovi' : ' a zapísaná do záznamu ticketu'}.
-            </div>
-          ) : (
-            <form onSubmit={handleFollowUp}>
-              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>Poslať doplňujúcu správu</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-                <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Vaše meno *" required style={inputStyle} />
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email (nepovinné)"
-                  style={inputStyle}
-                />
-              </div>
-              <textarea
-                value={body}
-                onChange={(e) => setBody(e.target.value)}
-                placeholder="Vaša otázka alebo doplnenie…"
-                rows={4}
-                required
-                style={{ ...inputStyle, width: '100%', resize: 'vertical', marginBottom: 10 }}
-              />
+            {lookup.status !== 'uzavrety' && (
               <button
-                type="submit"
-                disabled={sending}
+                onClick={handleCancel}
+                disabled={cancelling}
                 style={{
-                  padding: '10px 20px',
-                  background: 'var(--color-primary)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 'var(--radius-md)',
+                  marginTop: 12,
+                  padding: '7px 14px',
+                  background: 'var(--color-danger-bg)',
+                  color: 'var(--color-danger)',
+                  border: '1px solid var(--color-danger)',
+                  borderRadius: 'var(--radius-sm)',
                   fontWeight: 700,
-                  opacity: sending ? 0.7 : 1,
+                  fontSize: 12.5,
+                  opacity: cancelling ? 0.7 : 1,
                 }}
               >
-                {sending ? 'Odosielam…' : 'Odoslať správu'}
+                {cancelling ? 'Ruším…' : '✕ Zrušiť ticket'}
               </button>
-            </form>
+            )}
+          </div>
+
+          {cancelled && (
+            <div style={{ color: 'var(--color-success)', fontSize: 13.5, marginBottom: 16 }}>
+              ✓ Ticket bol zrušený.
+            </div>
           )}
+
+          {lookup.status !== 'uzavrety' &&
+            (sent ? (
+              <div style={{ color: 'var(--color-success)', fontSize: 13.5 }}>
+                ✓ Vaša správa bola odoslaná{lookup.hasAgent ? ' technikovi' : ' a zapísaná do záznamu ticketu'}.
+              </div>
+            ) : (
+              <form onSubmit={handleFollowUp}>
+                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>Poslať doplňujúcu správu</div>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Vaše meno *"
+                  required
+                  style={{ ...inputStyle, width: '100%', marginBottom: 10 }}
+                />
+                <textarea
+                  value={body}
+                  onChange={(e) => setBody(e.target.value)}
+                  placeholder="Vaša otázka alebo doplnenie…"
+                  rows={4}
+                  required
+                  style={{ ...inputStyle, width: '100%', resize: 'vertical', marginBottom: 10 }}
+                />
+                <button
+                  type="submit"
+                  disabled={sending}
+                  style={{
+                    padding: '10px 20px',
+                    background: 'var(--color-primary)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 'var(--radius-md)',
+                    fontWeight: 700,
+                    opacity: sending ? 0.7 : 1,
+                  }}
+                >
+                  {sending ? 'Odosielam…' : 'Odoslať správu'}
+                </button>
+              </form>
+            ))}
         </div>
       )}
     </div>

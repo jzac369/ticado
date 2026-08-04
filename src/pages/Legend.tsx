@@ -35,22 +35,29 @@ const GROUPS: Group[] = [
     ],
   },
   {
-    title: 'Rotujúci banner hore',
+    title: 'Rotujúci banner v hornej lište',
     entries: [
       {
         title: 'Čo zobrazuje',
-        body: 'Farebný box vedľa "VERZIA 1.0" cyklicky strieda až 5 upozornení: počet nepriradených ticketov, kritické otvorené tickety, tickety čakajúce na klienta, dnes vytvorené/vyriešené tickety, a tickety bez aktivity 24+ hodín. Kliknutím sa presuniete na zoznam ticketov.',
+        body: 'Farebný box v riadku so záložkami (Dashboard, Moje tikety, ...), zarovnaný k pravému okraju pred tlačidlom "+ Nový ticket". Cyklicky strieda až 5 upozornení: počet nepriradených ticketov, kritické otvorené tickety, tickety čakajúce na klienta, dnes vytvorené/vyriešené tickety, a tickety bez aktivity 24+ hodín. Kliknutím sa presuniete na zoznam ticketov.',
       },
     ],
   },
   {
-    title: 'Všetky tikety',
+    title: 'Zoznamy ticketov (Moje / Všetky / Nepriradené / Dnešné / Archivované)',
     entries: [
       {
-        title: 'Vyhľadávanie',
-        body: 'Hľadá v čísle ticketu, predmete, mene zákazníka aj v obsahu komunikácie. Viac slov oddelených medzerou = musia sedieť všetky (nie ľubovoľné). Presnú frázu zadajte v úvodzovkách, napr. "Backup Configuration".',
+        title: 'Číslo pri názve záložky',
+        body: 'Každá záložka v hornej lište zobrazuje aktuálny počet ticketov, ktoré do nej patria — aktualizuje sa v reálnom čase.',
       },
-      { title: 'Filtre', body: 'Stav, priorita a rozsah dátumu vytvorenia. Tlačidlo "Reset" vráti všetky filtre na východiskový stav.' },
+      { title: 'Moje tikety', body: 'Pre technika: tickety, ktoré mu sú priradené (podľa mena v Nastavenia → IT technici). Pre klienta: tickety, ktoré osobne nahlásil.' },
+      { title: 'Nepriradené tikety', body: 'Otvorené tickety bez priradeného technika — miesto, kde technici zvyknú hľadať prácu na prevzatie.' },
+      { title: 'Archivované tikety', body: 'Tickety odložené tlačidlom "Archivovať" v detaile ticketu. Nezobrazujú sa v žiadnom inom zozname ani v Dashboard štatistikách, kým sa neobnovia.' },
+      {
+        title: 'Vyhľadávanie (Všetky tikety)',
+        body: 'Hľadá v čísle ticketu, predmete, mene zákazníka aj v obsahu komunikácie. Viac slov oddelených medzerou = musia sedieť všetky (nie ľubovoľné). Presnú frázu zadajte v úvodzovkách, napr. "Backup Configuration". Rovnaké vyhľadávanie je dostupné odkiaľkoľvek klávesovou skratkou Ctrl+K.',
+      },
+      { title: 'Filtre (Všetky tikety)', body: 'Stav, priorita a rozsah dátumu vytvorenia. Tlačidlo "Reset" vráti všetky filtre na východiskový stav.' },
       {
         title: 'Rýchle filtre Všetky/Otvorené/Zatvorené',
         body: 'Otvorené = všetky stavy okrem Uzavretý. Zatvorené = len Uzavretý.',
@@ -79,6 +86,10 @@ const GROUPS: Group[] = [
       { title: 'Štítky', body: 'Ľubovoľné krátke značky pridané k tiketu (napr. "hardvér", "urgent") pre jemnejšie triedenie nad rámec kategórie.' },
       { title: 'Žiadateľ', body: 'Meno, firma, oddelenie (ak vyplnené) a email osoby, ktorá ticket nahlásila.' },
       { title: 'Posledná aktivita', body: 'Chronologický log zmien konkrétne na tomto tickete.' },
+      {
+        title: 'Archivovať',
+        body: 'Tlačidlo vpravo hore (vedľa Tlačiť/PDF) odloží ticket do zoznamu Archivované tikety — zmizne zo všetkých bežných zoznamov a štatistík, kým ho niekto neobnoví tlačidlom "Obnoviť".',
+      },
     ],
   },
   {
@@ -90,18 +101,34 @@ const GROUPS: Group[] = [
     ],
   },
   {
-    title: 'Nahlásiť problém (verejný formulár)',
+    title: 'Podporná stránka /support (bez prihlásenia)',
     entries: [
       {
-        title: 'Kto ho vidí',
-        body: 'Stránka /support je verejne dostupná bez prihlásenia — odkaz je aj na prihlasovacej obrazovke ("Nahlásiť problém bez prihlásenia").',
+        title: 'Kto ju vidí',
+        body: 'Stránka /support je verejne dostupná bez prihlásenia — odkaz je aj na prihlasovacej obrazovke ("Nahlásiť problém bez prihlásenia"). Úvodná obrazovka ponúka dve možnosti: nahlásiť nový problém alebo skontrolovať stav existujúcej požiadavky.',
       },
       {
-        title: 'Obmedzenia',
+        title: 'Nahlásiť problém — obmedzenia',
         body: 'Firma sa vyberá len z existujúceho zoznamu (nedá sa vymyslieť nová), a nedá sa vybrať konkrétny technik — o priradení rozhoduje až interný tím.',
       },
       { title: 'Prílohy', body: 'Rovnaké možnosti ako v detaile ticketu — drag&drop, výber súboru, alebo vloženie screenshotu (Ctrl+V) do popisu.' },
       { title: 'Po odoslaní', body: 'Zobrazí sa číslo ticketu a tlačidlo "Nahlásiť ďalší problém" na okamžité zadanie ďalšej požiadavky.' },
+      {
+        title: 'Skontrolovať stav požiadavky',
+        body: 'Vyžaduje číslo ticketu AJ emailovú adresu použitú pri nahlásení — obe sa musia zhodovať, inak sa ticket nezobrazí. Zobrazí stav, prioritu a či sa mu už venuje technik.',
+      },
+      {
+        title: 'Doplňujúca správa',
+        body: 'Po úspešnom overení môže klient poslať doplňujúcu otázku. Ak má ticket priradeného technika, správa sa zapíše priamo do komunikácie ticketu. Ak ticket ešte čaká vo fronte, správa sa zapíše len do Poslednej aktivity ticketu.',
+      },
+      {
+        title: 'Zrušiť ticket',
+        body: 'Po overení emailu môže klient ticket sám zrušiť — stav sa zmení na Uzavretý a do Poslednej aktivity pribudne záznam "Uzavretý používateľom" s časovou stopou. Dá sa použiť len na ešte neuzavreté tickety.',
+      },
+      {
+        title: 'Live chat',
+        body: 'Ak je zapnutý v Nastavenia → Live chat, na stránke sa zobrazí plávajúce tlačidlo 💬. Návštevník zadá meno, email a nepovinne číslo ticketu, ktorého sa chat týka.',
+      },
     ],
   },
   {
@@ -115,8 +142,23 @@ const GROUPS: Group[] = [
   {
     title: 'Nastavenia',
     entries: [
-      { title: 'IT technici', body: 'Meno, pozícia a email technikov, ktorí sa dajú priraďovať k ticketom. Editovateľné a mazateľné priamo v tabuľke.' },
+      {
+        title: 'IT technici',
+        body: 'Meno, priezvisko, pozícia, email a ďalšie kontaktné údaje technikov, ktorí sa dajú priraďovať k ticketom. Upravovať a mazať iných technikov môže len master agent — ostatní vidia zoznam len na čítanie a upravujú si len svoj vlastný záznam cez Môj profil.',
+      },
       { title: 'Šablóny odpovedí', body: 'Preddefinované texty na rýchle vkladanie do odpovedí (napr. "Prosíme o reštart zariadenia...").' },
+      {
+        title: 'Live chat',
+        body: 'Zoznam konverzácií z podporného widgetu na /support, s prepínačom na zapnutie/vypnutie chatu pre klientov. Ak návštevník uviedol číslo ticketu, vedľa chatu sa zobrazí aj samotný ticket s jeho záznamom aktivity — pre rýchlejšiu prácu bez prepínania obrazoviek.',
+      },
+      {
+        title: 'Notifikácie live chatu',
+        body: 'Nová správa od návštevníka rozbliká ikonu 💬 Live chat v hornej lište a pridá záznam do zvončeka notifikácií, spolu s jemným zvukovým tónom (dá sa vypnúť vo Všeobecných nastaveniach). Otvorením konverzácie v Live chate sa upozornenie stíši.',
+      },
+      {
+        title: 'Všeobecné nastavenia',
+        body: 'Uvítací nadpis/podnadpis a text v päte podpornej stránky /support, prevádzkové hodiny podpory, a vypínače pre live chat a jeho zvukové upozornenie.',
+      },
     ],
   },
   {
@@ -152,7 +194,7 @@ export function LegendPage() {
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NÁPOVEDA</div>
       <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Legenda funkcií</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Prehľad všetkých funkcií Ticado ServiceDesk — čo znamenajú a ako sa používajú.
+        Prehľad všetkých funkcií RONA Technická podpora — čo znamenajú a ako sa používajú.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

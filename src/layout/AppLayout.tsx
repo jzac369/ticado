@@ -3,7 +3,6 @@ import { TopNav } from './TopNav';
 import { IdleGuard } from '../components/IdleGuard';
 import { NotificationWatcher } from '../components/NotificationWatcher';
 import { CommandPalette } from '../components/CommandPalette';
-import { AlertTicker } from '../components/AlertTicker';
 
 export function AppLayout() {
   return (
@@ -12,9 +11,6 @@ export function AppLayout() {
       <NotificationWatcher />
       <CommandPalette />
       <TopNav />
-      <div className="no-print" style={{ padding: '10px 20px 0' }}>
-        <AlertTicker />
-      </div>
       <main style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
         <Outlet />
       </main>

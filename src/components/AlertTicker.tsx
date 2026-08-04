@@ -23,7 +23,7 @@ export function AlertTicker() {
   const [index, setIndex] = useState(0);
   const navigate = useNavigate();
 
-  useEffect(() => subscribeTickets(setTickets), []);
+  useEffect(() => subscribeTickets((data) => setTickets(data.filter((t) => !t.archived))), []);
 
   const messages = useMemo<AlertMsg[]>(() => {
     const open = tickets.filter((t) => t.status !== 'uzavrety');

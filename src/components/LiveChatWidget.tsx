@@ -14,6 +14,7 @@ export function LiveChatWidget() {
   const [chatId, setChatId] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) ?? '');
   const [email, setEmail] = useState('');
+  const [ticketCode, setTicketCode] = useState('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [draft, setDraft] = useState('');
   const [starting, setStarting] = useState(false);
@@ -30,10 +31,10 @@ export function LiveChatWidget() {
 
   async function handleStart(e: FormEvent) {
     e.preventDefault();
-    if (!name.trim()) return;
+    if (!name.trim() || !email.trim()) return;
     setStarting(true);
     try {
-      const id = await createLiveChat(name.trim(), email.trim());
+      const id = await createLiveChat(name.trim(), email.trim(), ticketCode.trim() || undefined);
       localStorage.setItem(STORAGE_KEY, id);
       localStorage.setItem(NAME_KEY, name.trim());
       setChatId(id);
@@ -113,7 +114,7 @@ export function LiveChatWidget() {
       {!chatId ? (
         <form onSubmit={handleStart} style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           <p style={{ margin: 0, fontSize: 12.5, color: 'var(--color-text-muted)' }}>
-            Zadajte svoje meno a môžeme začať.
+            Zadajte svoje meno a email a môžeme začať.
           </p>
           <input
             value={name}
@@ -126,7 +127,14 @@ export function LiveChatWidget() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="Email (nepovinné)"
+            placeholder="Emailová adresa *"
+            required
+            style={chatInputStyle}
+          />
+          <input
+            value={ticketCode}
+            onChange={(e) => setTicketCode(e.target.value)}
+            placeholder="Číslo ticketu, ak sa týka (nepovinné)"
             style={chatInputStyle}
           />
           <button

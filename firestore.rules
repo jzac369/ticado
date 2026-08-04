@@ -52,7 +52,14 @@ service cloud.firestore {
         || (request.resource.data.status == 'otvoreny' &&
             request.resource.data.assignedTo == null &&
             request.resource.data.closedAt == null);
-      allow update, delete: if isAgent();
+      // Public "cancel my ticket" from /support (after client-side email
+      // verification against ticketLookup): may only flip an open ticket to
+      // closed, touching nothing else. Everything else stays agent-only.
+      allow update: if isAgent() ||
+        (resource.data.status != 'uzavrety' &&
+         request.resource.data.status == 'uzavrety' &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'closedAt', 'updatedAt']));
+      allow delete: if isAgent();
 
       match /messages/{messageId} {
         allow read: if isAgent() ||
@@ -70,15 +77,22 @@ service cloud.firestore {
     }
 
     // Slim public-facing shard of a ticket (code, subject, status, priority,
-    // hasAgent flag) used by the /support "check status" lookup so visitors
-    // can find their ticket by code without exposing full ticket data
-    // (requester email, description, customer name) to anyone who guesses
-    // a sequential code. Written/kept in sync from tickets.ts whenever a
-    // ticket is created or its status/assignment changes.
+    // hasAgent flag, requester email) used by the /support "check status"
+    // lookup: a visitor must supply the matching code AND email before the
+    // app shows any ticket detail. That match is enforced client-side only
+    // (Firestore rules can't see a query's "where" filter values), so this
+    // is a soft deterrent, not real access control - the same accepted
+    // tradeoff already made for the public customer dropdown above.
+    // Written/kept in sync from tickets.ts whenever a ticket is created or
+    // its status/assignment changes.
     match /ticketLookup/{code} {
       allow read: if true;
       allow create: if true;
-      allow update: if isAgent();
+      // Public "cancel" sync mirrors the tickets/{id} rule above: may only
+      // flip status to closed, nothing else.
+      allow update: if isAgent() ||
+        (request.resource.data.status == 'uzavrety' &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'updatedAt']));
     }
 
     // Anonymous live chat: the chat/message document IDs are Firestore's

@@ -37,7 +37,7 @@ export function TicketsListPage() {
 
   useEffect(() => {
     const unsub = subscribeTickets((data) => {
-      setTickets(data);
+      setTickets(data.filter((t) => !t.archived));
       setLoading(false);
     });
     return unsub;

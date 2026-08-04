@@ -59,7 +59,7 @@ export function LoginPage() {
             height={32}
             style={{ borderRadius: 7, display: 'block' }}
           />
-          <span style={{ fontWeight: 700, fontSize: 20 }}>Ticado</span>
+          <span style={{ fontWeight: 700, fontSize: 20 }}>RONA</span>
         </div>
 
         <div>
@@ -75,7 +75,7 @@ export function LoginPage() {
               marginBottom: 20,
             }}
           >
-            TICADO
+            RONA TECHNICKÁ PODPORA
           </span>
           <h1 style={{ fontSize: 42, lineHeight: 1.15, margin: '0 0 16px', fontWeight: 600 }}>
             Podpora a tickety
@@ -121,7 +121,7 @@ export function LoginPage() {
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: 'var(--color-text-faint)' }}>
                 VITAJTE SPÄŤ
               </div>
-              <div style={{ fontSize: 17, fontWeight: 700 }}>Prihlásenie do Ticado</div>
+              <div style={{ fontSize: 17, fontWeight: 700 }}>Prihlásenie do RONA Technická podpora</div>
             </div>
           </div>
 

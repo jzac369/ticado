@@ -64,6 +64,7 @@ export interface Ticket {
   channel: TicketChannel;
   assignedTo: string | null;
   tags?: string[];
+  archived?: boolean;
   createdAt: Timestamp | null;
   updatedAt: Timestamp | null;
   closedAt: Timestamp | null;

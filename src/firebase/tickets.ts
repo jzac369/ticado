@@ -27,6 +27,7 @@ export interface TicketLookup {
   status: TicketStatus;
   priority: TicketPriority;
   hasAgent: boolean;
+  requesterEmail: string;
   createdAt: Timestamp | null;
   updatedAt: Timestamp | null;
 }
@@ -157,6 +158,7 @@ export async function createTicket(input: NewTicketInput) {
     status: 'otvoreny' as TicketStatus,
     priority: input.priority,
     hasAgent: Boolean(assignedTo),
+    requesterEmail: (input.requesterEmail ?? '').trim().toLowerCase(),
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -229,9 +231,66 @@ export async function updateTicketAssignment(ticketId: string, assignedTo: strin
   await syncTicketLookup(ticketId, { hasAgent: Boolean(assignedTo) });
 }
 
-export async function lookupTicketByCode(code: string): Promise<TicketLookup | null> {
+/**
+ * Fetches the public ticket shard for the given code and verifies the
+ * caller-supplied email against the requester's email on file. The shard
+ * itself is publicly readable (needed for the /support status-check page),
+ * so this check happens client-side - it stops a casual visitor from
+ * viewing someone else's ticket, but is not a substitute for real
+ * server-side auth. Returns null both when the code doesn't exist and when
+ * the email doesn't match, so callers can't distinguish the two cases.
+ */
+export async function lookupTicketByCodeAndEmail(code: string, email: string): Promise<TicketLookup | null> {
   const snap = await getDoc(doc(db, 'ticketLookup', code.trim().toUpperCase()));
-  return snap.exists() ? (snap.data() as TicketLookup) : null;
+  if (!snap.exists()) return null;
+  const lookup = snap.data() as TicketLookup;
+  if (!lookup.requesterEmail || lookup.requesterEmail !== email.trim().toLowerCase()) return null;
+  return lookup;
+}
+
+/** Agent-side resolve: no email check needed, agents already have full read access. */
+export async function lookupTicketIdByCode(code: string): Promise<string | null> {
+  const snap = await getDoc(doc(db, 'ticketLookup', code.trim().toUpperCase()));
+  return snap.exists() ? (snap.data().ticketId as string) : null;
+}
+
+export async function cancelTicketByVisitor(lookup: TicketLookup) {
+  await updateDoc(doc(db, 'tickets', lookup.ticketId), {
+    status: 'uzavrety' as TicketStatus,
+    closedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  });
+  await addDoc(collection(db, 'tickets', lookup.ticketId, 'activity'), {
+    ticketId: lookup.ticketId,
+    text: 'Uzavretý používateľom',
+    actor: 'Klient',
+    createdAt: serverTimestamp(),
+  });
+  await setDoc(
+    doc(db, 'ticketLookup', lookup.code),
+    { status: 'uzavrety' as TicketStatus, updatedAt: serverTimestamp() },
+    { merge: true },
+  );
+}
+
+export async function archiveTicket(ticketId: string, actor: string) {
+  await updateDoc(doc(db, 'tickets', ticketId), { archived: true, updatedAt: serverTimestamp() });
+  await addDoc(collection(db, 'tickets', ticketId, 'activity'), {
+    ticketId,
+    text: 'Ticket archivovaný',
+    actor,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function unarchiveTicket(ticketId: string, actor: string) {
+  await updateDoc(doc(db, 'tickets', ticketId), { archived: false, updatedAt: serverTimestamp() });
+  await addDoc(collection(db, 'tickets', ticketId, 'activity'), {
+    ticketId,
+    text: 'Ticket obnovený z archívu',
+    actor,
+    createdAt: serverTimestamp(),
+  });
 }
 
 export async function sendPublicFollowUp(

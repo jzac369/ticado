@@ -82,9 +82,9 @@ export function NewTicketPage() {
   return (
     <div style={{ maxWidth: 960 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)' }}>NOVÁ POŽIADAVKA</div>
-      <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Vytvoriť nový prípad</h1>
+      <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Vytvoriť nový ticket</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Evidencia ticketu v SLA režime s notifikáciami pre klienta.
+        Evidencia ticketu s notifikáciami pre klienta.
       </p>
 
       <form onSubmit={handleSubmit}>
@@ -154,7 +154,7 @@ export function NewTicketPage() {
           </div>
         </Section>
 
-        <Section title="2. Obsah prípadu" subtitle="Popíšte problém tak, aby sa dal začať riešiť bez ďalšieho vypytovania.">
+        <Section title="2. Obsah ticketu" subtitle="Popíšte problém tak, aby sa dal začať riešiť bez ďalšieho vypytovania.">
           <Field label="Meno žiadateľa">
             <input value={requesterName} onChange={(e) => setRequesterName(e.target.value)} style={inputStyle} />
           </Field>
@@ -203,7 +203,7 @@ export function NewTicketPage() {
               opacity: submitting ? 0.7 : 1,
             }}
           >
-            {submitting ? 'Vytváram…' : '✓ Vytvoriť prípad'}
+            {submitting ? 'Vytváram…' : '✓ Vytvoriť ticket'}
           </button>
         </div>
       </form>

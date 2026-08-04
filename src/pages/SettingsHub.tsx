@@ -17,7 +17,7 @@ export function SettingsHubPage() {
     <div>
       <h1 style={{ fontSize: 22, margin: '0 0 4px' }}>Nastavenia</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Správa systému Ticado.
+        Správa systému RONA Technická podpora.
       </p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
         {CARDS.map((c) => (
