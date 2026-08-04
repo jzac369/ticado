@@ -34,7 +34,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
         <div style={{ fontSize: 40 }}>🔒</div>
         <h1 style={{ fontSize: 20, margin: 0 }}>Prístup zamietnutý</h1>
         <p style={{ maxWidth: 420, color: 'var(--color-text-muted)', fontSize: 14 }}>
-          Váš účet ({user.email}) nemá priradený prístup do RONA ServiceDesk. Kontaktujte administrátora, aby vás
+          Váš účet ({user.email}) nemá priradený prístup do Ticado. Kontaktujte administrátora, aby vás
           pridal do zoznamu povolených technikov.
         </p>
         <button

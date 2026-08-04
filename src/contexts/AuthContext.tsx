@@ -13,7 +13,7 @@ import { auth, db } from '../firebase/config';
 
 export type UserProfile =
   | { role: 'agent'; master: boolean }
-  | { role: 'klient'; customerId: string; customerName: string }
+  | { role: 'klient'; customerId: string; customerName: string; firstName: string; lastName: string }
   | { role: 'unauthorized' };
 
 interface AuthContextValue {
@@ -44,7 +44,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!user) return;
     const unsub = onSnapshot(doc(db, 'users', user.uid), async (snap) => {
       if (snap.exists() && snap.data().role === 'klient') {
-        setProfile({ role: 'klient', customerId: snap.data().customerId, customerName: snap.data().customerName });
+        setProfile({
+          role: 'klient',
+          customerId: snap.data().customerId,
+          customerName: snap.data().customerName,
+          firstName: snap.data().firstName ?? '',
+          lastName: snap.data().lastName ?? '',
+        });
         return;
       }
       if (!user.email) {

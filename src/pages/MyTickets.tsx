@@ -99,7 +99,9 @@ export function MyTicketsPage() {
                 <td style={{ padding: '12px 14px' }}>
                   <PriorityBadge priority={t.priority} />
                 </td>
-                <td style={{ padding: '12px 14px', color: 'var(--color-text-faint)' }}>›</td>
+                <td style={{ padding: '12px 14px', color: 'var(--color-primary)', fontSize: 22, fontWeight: 700, textAlign: 'center' }}>
+                  ›
+                </td>
               </tr>
             ))}
           </tbody>

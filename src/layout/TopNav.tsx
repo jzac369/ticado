@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Logo } from '../components/Logo';
 import { NotificationBell } from '../components/NotificationBell';
+import { subscribeAgents, type Agent } from '../firebase/agents';
 
 interface IconItem {
   label: string;
@@ -53,6 +54,12 @@ export function TopNav() {
   const isClient = profile?.role === 'klient';
   const icons = isClient ? clientIcons : agentIcons;
   const tabs = isClient ? clientTabs : agentTabs;
+  const [agents, setAgents] = useState<Agent[]>([]);
+
+  useEffect(() => {
+    if (isClient) return;
+    return subscribeAgents(setAgents);
+  }, [isClient]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -62,7 +69,20 @@ export function TopNav() {
     return () => document.removeEventListener('mousedown', onClickOutside);
   }, []);
 
-  const displayName = user?.email?.split('@')[0] ?? 'Používateľ';
+  const myAgent = useMemo(
+    () => agents.find((a) => a.email && a.email.toLowerCase() === user?.email?.toLowerCase()),
+    [agents, user],
+  );
+
+  const displayName = useMemo(() => {
+    if (profile?.role === 'klient') {
+      const full = `${profile.firstName} ${profile.lastName}`.trim();
+      if (full) return full;
+    } else if (myAgent) {
+      return myAgent.name;
+    }
+    return user?.email?.split('@')[0] ?? 'Používateľ';
+  }, [profile, myAgent, user]);
 
   return (
     <div className="no-print">

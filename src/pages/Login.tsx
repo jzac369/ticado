@@ -59,7 +59,7 @@ export function LoginPage() {
             height={32}
             style={{ borderRadius: 7, display: 'block' }}
           />
-          <span style={{ fontWeight: 700, fontSize: 20 }}>RONA</span>
+          <span style={{ fontWeight: 700, fontSize: 20 }}>Ticado</span>
         </div>
 
         <div>
@@ -75,7 +75,7 @@ export function LoginPage() {
               marginBottom: 20,
             }}
           >
-            RONA SERVICEDESK
+            TICADO
           </span>
           <h1 style={{ fontSize: 42, lineHeight: 1.15, margin: '0 0 16px', fontWeight: 600 }}>
             Podpora a tickety
@@ -87,7 +87,7 @@ export function LoginPage() {
           </p>
         </div>
 
-        <div style={{ fontSize: 12.5, opacity: 0.7 }}>Zabezpečený interný prístup</div>
+        <div style={{ fontSize: 12.5, opacity: 0.7 }}>Dôverné — iba pre zamestnancov a klientov RONA</div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
@@ -121,7 +121,7 @@ export function LoginPage() {
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: 'var(--color-text-faint)' }}>
                 VITAJTE SPÄŤ
               </div>
-              <div style={{ fontSize: 17, fontWeight: 700 }}>Prihlásenie do RONA ServiceDesk</div>
+              <div style={{ fontSize: 17, fontWeight: 700 }}>Prihlásenie do Ticado</div>
             </div>
           </div>
 
