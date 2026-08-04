@@ -2,11 +2,26 @@ import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { subscribeAgents, createAgent, updateAgent, type Agent } from '../firebase/agents';
 import { useAuth } from '../contexts/AuthContext';
 
+const TEAM_OPTIONS = ['Servisný tím', 'Infraštruktúra', 'Sieťová podpora', 'Aplikačná podpora', 'Bezpečnosť'];
+
+function emptyForm() {
+  return {
+    firstName: '',
+    lastName: '',
+    position: '',
+    phone: '',
+    team: '',
+    specialization: '',
+    availability: '',
+    extension: '',
+    bio: '',
+  };
+}
+
 export function ProfilePage() {
   const { user } = useAuth();
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [name, setName] = useState('');
-  const [position, setPosition] = useState('');
+  const [form, setForm] = useState(emptyForm());
   const [saved, setSaved] = useState(false);
   const [claimId, setClaimId] = useState('');
 
@@ -20,18 +35,44 @@ export function ProfilePage() {
 
   useEffect(() => {
     if (myAgent) {
-      setName(myAgent.name);
-      setPosition(myAgent.position ?? '');
+      setForm({
+        firstName: myAgent.firstName || myAgent.name.split(' ')[0] || '',
+        lastName: myAgent.lastName || myAgent.name.split(' ').slice(1).join(' ') || '',
+        position: myAgent.position ?? '',
+        phone: myAgent.phone ?? '',
+        team: myAgent.team ?? '',
+        specialization: myAgent.specialization ?? '',
+        availability: myAgent.availability ?? '',
+        extension: myAgent.extension ?? '',
+        bio: myAgent.bio ?? '',
+      });
     }
   }, [myAgent]);
+
+  function set<K extends keyof ReturnType<typeof emptyForm>>(key: K, value: string) {
+    setForm((f) => ({ ...f, [key]: value }));
+  }
 
   async function handleSave(e: FormEvent) {
     e.preventDefault();
     if (!user?.email) return;
+    const name = `${form.firstName.trim()} ${form.lastName.trim()}`.trim();
+    const payload = {
+      name,
+      firstName: form.firstName.trim(),
+      lastName: form.lastName.trim(),
+      position: form.position.trim(),
+      phone: form.phone.trim(),
+      team: form.team.trim(),
+      specialization: form.specialization.trim(),
+      availability: form.availability.trim(),
+      extension: form.extension.trim(),
+      bio: form.bio.trim(),
+    };
     if (myAgent) {
-      await updateAgent(myAgent.id, { name: name.trim(), position: position.trim() });
+      await updateAgent(myAgent.id, payload);
     } else {
-      await createAgent({ name: name.trim(), position: position.trim(), email: user.email });
+      await createAgent({ ...payload, email: user.email });
     }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -43,7 +84,7 @@ export function ProfilePage() {
   }
 
   return (
-    <div style={{ maxWidth: 520 }}>
+    <div style={{ maxWidth: 560 }}>
       <h1 style={{ fontSize: 22, margin: '0 0 4px' }}>Môj profil</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
         Prepojenie vášho prihlasovacieho účtu ({user?.email}) s technikom, aby fungovali "Moje tikety".
@@ -96,10 +137,77 @@ export function ProfilePage() {
         <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 12 }}>
           {myAgent ? 'Upraviť môj záznam' : 'Vytvoriť môj záznam technika'}
         </div>
-        <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Zobrazované meno</label>
-        <input value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} required />
-        <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, margin: '14px 0 6px' }}>Pozícia</label>
-        <input value={position} onChange={(e) => setPosition(e.target.value)} style={inputStyle} />
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Krstné meno</label>
+            <input value={form.firstName} onChange={(e) => set('firstName', e.target.value)} style={inputStyle} required />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Priezvisko</label>
+            <input value={form.lastName} onChange={(e) => set('lastName', e.target.value)} style={inputStyle} required />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Pozícia</label>
+            <input value={form.position} onChange={(e) => set('position', e.target.value)} style={inputStyle} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Telefónne číslo</label>
+            <input value={form.phone} onChange={(e) => set('phone', e.target.value)} style={inputStyle} placeholder="+421 9xx xxx xxx" />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
+          <div>
+            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Tím / oddelenie</label>
+            <select value={form.team} onChange={(e) => set('team', e.target.value)} style={inputStyle}>
+              <option value="">— Vybrať tím —</option>
+              {TEAM_OPTIONS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Interná klapka</label>
+            <input value={form.extension} onChange={(e) => set('extension', e.target.value)} style={inputStyle} placeholder="napr. 214" />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Špecializácia</label>
+          <input
+            value={form.specialization}
+            onChange={(e) => set('specialization', e.target.value)}
+            style={inputStyle}
+            placeholder="napr. Windows Server, siete, tlačiarne"
+          />
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Dostupnosť / pracovná doba</label>
+          <input
+            value={form.availability}
+            onChange={(e) => set('availability', e.target.value)}
+            style={inputStyle}
+            placeholder="napr. Po-Pi 8:00-16:00"
+          />
+        </div>
+
+        <div>
+          <label style={{ display: 'block', fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>O mne / poznámka</label>
+          <textarea
+            value={form.bio}
+            onChange={(e) => set('bio', e.target.value)}
+            rows={3}
+            style={{ ...inputStyle, resize: 'vertical' }}
+          />
+        </div>
+
         <button
           type="submit"
           style={{

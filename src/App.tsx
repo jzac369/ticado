@@ -19,7 +19,7 @@ import { AnnouncementSettingsPage } from './pages/AnnouncementSettings';
 import { AnalyticsPage } from './pages/Analytics';
 import { MyTicketsPage } from './pages/MyTickets';
 import { TodayTicketsPage } from './pages/TodayTickets';
-import { SearchTicketsPage } from './pages/SearchTickets';
+import { UnassignedTicketsPage } from './pages/UnassignedTickets';
 import { SettingsHubPage } from './pages/SettingsHub';
 import { ProfilePage } from './pages/Profile';
 
@@ -108,7 +108,14 @@ function App() {
             <Route path="legend" element={<LegendPage />} />
             <Route path="my-tickets" element={<MyTicketsPage />} />
             <Route path="today" element={<TodayTicketsPage />} />
-            <Route path="search" element={<SearchTicketsPage />} />
+            <Route
+              path="unassigned"
+              element={
+                <AgentOnlyRoute>
+                  <UnassignedTicketsPage />
+                </AgentOnlyRoute>
+              }
+            />
             <Route
               path="settings-hub"
               element={

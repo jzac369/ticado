@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Logo } from '../components/Logo';
 import { NotificationBell } from '../components/NotificationBell';
 import { subscribeAgents, type Agent } from '../firebase/agents';
+import { subscribeTickets } from '../firebase/tickets';
+import type { Ticket } from '../types';
 
 interface IconItem {
   label: string;
@@ -16,6 +18,7 @@ interface TabItem {
   label: string;
   to: string;
   end?: boolean;
+  countKey?: 'my' | 'all' | 'unassigned' | 'today';
 }
 
 const agentIcons: IconItem[] = [
@@ -33,17 +36,16 @@ const clientIcons: IconItem[] = [
 
 const agentTabs: TabItem[] = [
   { label: 'Dashboard', to: '/', end: true },
-  { label: 'Moje tikety', to: '/my-tickets' },
-  { label: 'Všetky tikety', to: '/tickets' },
-  { label: 'Dnešné tikety', to: '/today' },
-  { label: 'Vyhľadávať', to: '/search' },
+  { label: 'Moje tikety', to: '/my-tickets', countKey: 'my' },
+  { label: 'Všetky tikety', to: '/tickets', countKey: 'all' },
+  { label: 'Nepriradené tikety', to: '/unassigned', countKey: 'unassigned' },
+  { label: 'Dnešné tikety', to: '/today', countKey: 'today' },
 ];
 
 const clientTabs: TabItem[] = [
   { label: 'Dashboard', to: '/', end: true },
-  { label: 'Moje tikety', to: '/my-tickets' },
-  { label: 'Dnešné tikety', to: '/today' },
-  { label: 'Vyhľadávať', to: '/search' },
+  { label: 'Moje tikety', to: '/my-tickets', countKey: 'my' },
+  { label: 'Dnešné tikety', to: '/today', countKey: 'today' },
 ];
 
 export function TopNav() {
@@ -55,11 +57,14 @@ export function TopNav() {
   const icons = isClient ? clientIcons : agentIcons;
   const tabs = isClient ? clientTabs : agentTabs;
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
 
   useEffect(() => {
     if (isClient) return;
     return subscribeAgents(setAgents);
   }, [isClient]);
+
+  useEffect(() => subscribeTickets(setTickets), []);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -83,6 +88,41 @@ export function TopNav() {
     }
     return user?.email?.split('@')[0] ?? 'Používateľ';
   }, [profile, myAgent, user]);
+
+  const firstName = useMemo(() => {
+    if (profile?.role === 'klient') {
+      return profile.firstName || displayName.split(' ')[0];
+    }
+    if (myAgent) {
+      return myAgent.firstName || myAgent.name.split(' ')[0];
+    }
+    return displayName.split(' ')[0];
+  }, [profile, myAgent, displayName]);
+
+  const counts = useMemo(() => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayStartMs = todayStart.getTime();
+
+    let myTickets = tickets;
+    if (profile?.role === 'klient') {
+      myTickets = tickets.filter((t) => t.requesterEmail?.toLowerCase() === user?.email?.toLowerCase());
+    } else if (myAgent) {
+      myTickets = tickets.filter((t) => t.assignedTo === myAgent.name);
+    } else {
+      myTickets = [];
+    }
+
+    const scoped =
+      profile?.role === 'klient' ? tickets.filter((t) => t.customerId === profile.customerId) : tickets;
+
+    return {
+      my: myTickets.length,
+      all: tickets.length,
+      unassigned: tickets.filter((t) => !t.assignedTo && t.status !== 'uzavrety').length,
+      today: scoped.filter((t) => (t.createdAt?.toMillis() ?? 0) >= todayStartMs).length,
+    };
+  }, [tickets, profile, user, myAgent]);
 
   return (
     <div className="no-print">
@@ -149,7 +189,7 @@ export function TopNav() {
               >
                 {displayName.slice(0, 1).toUpperCase()}
               </div>
-              <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{displayName} ▾</span>
+              <span style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>Ahoj, {firstName} ▾</span>
             </button>
             {menuOpen && (
               <div
@@ -200,6 +240,7 @@ export function TopNav() {
             style={({ isActive }) => ({
               display: 'flex',
               alignItems: 'center',
+              gap: 6,
               padding: '0 14px',
               height: 44,
               fontSize: 13,
@@ -209,6 +250,20 @@ export function TopNav() {
             })}
           >
             {tab.label}
+            {tab.countKey && (
+              <span
+                style={{
+                  fontSize: 10.5,
+                  fontWeight: 700,
+                  padding: '1px 6px',
+                  borderRadius: 999,
+                  background: 'var(--color-surface-2)',
+                  color: 'var(--color-text-faint)',
+                }}
+              >
+                {counts[tab.countKey]}
+              </span>
+            )}
           </NavLink>
         ))}
         <button

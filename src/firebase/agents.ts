@@ -5,8 +5,16 @@ import type { Timestamp } from 'firebase/firestore';
 export interface Agent {
   id: string;
   name: string;
+  firstName?: string;
+  lastName?: string;
   position?: string;
   email?: string;
+  phone?: string;
+  team?: string;
+  specialization?: string;
+  availability?: string;
+  extension?: string;
+  bio?: string;
   active: boolean;
   createdAt: Timestamp | null;
 }
@@ -20,17 +28,45 @@ export function subscribeAgents(callback: (agents: Agent[]) => void) {
   });
 }
 
-export async function createAgent(input: { name: string; position?: string; email?: string }) {
+export async function createAgent(input: {
+  name: string;
+  firstName?: string;
+  lastName?: string;
+  position?: string;
+  email?: string;
+  phone?: string;
+  team?: string;
+  specialization?: string;
+  availability?: string;
+  extension?: string;
+  bio?: string;
+}) {
   return addDoc(agentsCol, {
     name: input.name,
+    firstName: input.firstName ?? '',
+    lastName: input.lastName ?? '',
     position: input.position ?? '',
     email: input.email ?? '',
+    phone: input.phone ?? '',
+    team: input.team ?? '',
+    specialization: input.specialization ?? '',
+    availability: input.availability ?? '',
+    extension: input.extension ?? '',
+    bio: input.bio ?? '',
     active: true,
     createdAt: serverTimestamp(),
   });
 }
 
-export async function updateAgent(agentId: string, input: Partial<Pick<Agent, 'name' | 'position' | 'email'>>) {
+export async function updateAgent(
+  agentId: string,
+  input: Partial<
+    Pick<
+      Agent,
+      'name' | 'firstName' | 'lastName' | 'position' | 'email' | 'phone' | 'team' | 'specialization' | 'availability' | 'extension' | 'bio'
+    >
+  >,
+) {
   return updateDoc(doc(db, 'agents', agentId), input);
 }
 
