@@ -83,9 +83,18 @@ export function GeneralSettingsPage() {
           Live chat je zapnutý pre klientov
         </label>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, fontWeight: 600, fontSize: 13.5 }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontWeight: 600, fontSize: 13.5 }}>
           <input type="checkbox" checked={settings.chatSoundEnabled} onChange={(e) => set('chatSoundEnabled', e.target.checked)} />
           Prehrávať zvukový tón pri novej live chat správe
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, fontWeight: 600, fontSize: 13.5 }}>
+          <input
+            type="checkbox"
+            checked={settings.newTicketSoundEnabled}
+            onChange={(e) => set('newTicketSoundEnabled', e.target.checked)}
+          />
+          Prehrávať zvukový tón pri novom tickete
         </label>
 
         <button

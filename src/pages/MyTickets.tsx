@@ -4,7 +4,18 @@ import { subscribeTickets } from '../firebase/tickets';
 import { subscribeAgents, type Agent } from '../firebase/agents';
 import { useAuth } from '../contexts/AuthContext';
 import type { Ticket } from '../types';
+import { CHANNEL_LABELS } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/Badges';
+
+function ageLabel(createdAt: Ticket['createdAt']) {
+  if (!createdAt) return '—';
+  const ms = Date.now() - createdAt.toMillis();
+  const hours = Math.floor(ms / (60 * 60 * 1000));
+  if (hours < 1) return 'práve teraz';
+  if (hours < 24) return `${hours} ${hours === 1 ? 'hodina' : hours < 5 ? 'hodiny' : 'hodín'}`;
+  const days = Math.floor(hours / 24);
+  return `${days} ${days === 1 ? 'deň' : days < 5 ? 'dni' : 'dní'}`;
+}
 
 export function MyTicketsPage() {
   const { user, profile } = useAuth();
@@ -65,7 +76,7 @@ export function MyTicketsPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
-              {['Ticket', 'Predmet', 'Zákazník', 'Stav', 'Priorita', ''].map((h) => (
+              {['Ticket', 'Predmet', 'Zákazník', 'Žiadateľ', 'Kanál', 'Vek', 'Stav', 'Priorita', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--color-text-faint)' }}>
                   {h}
                 </th>
@@ -75,7 +86,7 @@ export function MyTicketsPage() {
           <tbody>
             {myTickets.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   Žiadne tickety.
                 </td>
               </tr>
@@ -93,6 +104,9 @@ export function MyTicketsPage() {
                 <td style={{ padding: '12px 14px', fontWeight: 700, color: 'var(--color-primary)' }}>{t.code}</td>
                 <td style={{ padding: '12px 14px', fontWeight: 600 }}>{t.subject}</td>
                 <td style={{ padding: '12px 14px' }}>{t.customerName}</td>
+                <td style={{ padding: '12px 14px' }}>{t.requesterName}</td>
+                <td style={{ padding: '12px 14px', color: 'var(--color-text-muted)' }}>{CHANNEL_LABELS[t.channel]}</td>
+                <td style={{ padding: '12px 14px', color: 'var(--color-text-muted)' }}>{ageLabel(t.createdAt)}</td>
                 <td style={{ padding: '12px 14px' }}>
                   <StatusBadge status={t.status} />
                 </td>

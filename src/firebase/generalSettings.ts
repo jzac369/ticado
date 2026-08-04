@@ -4,6 +4,7 @@ import { db } from './config';
 export interface GeneralSettings {
   liveChatEnabled: boolean;
   chatSoundEnabled: boolean;
+  newTicketSoundEnabled: boolean;
   supportWelcomeTitle: string;
   supportWelcomeSubtitle: string;
   supportHours: string;
@@ -13,6 +14,7 @@ export interface GeneralSettings {
 export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   liveChatEnabled: false,
   chatSoundEnabled: true,
+  newTicketSoundEnabled: true,
   supportWelcomeTitle: 'Centrum podpory a správy požiadaviek',
   supportWelcomeSubtitle:
     'Nahlasujte technické problémy, zadávajte IT požiadavky a sledujte ich riešenie na jednom mieste.',

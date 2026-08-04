@@ -2,8 +2,8 @@ import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode
 import { useNavigate } from 'react-router-dom';
 import { createTicket } from '../firebase/tickets';
 import { subscribeCustomers, createCustomer } from '../firebase/customers';
-import type { Customer, TicketPriority } from '../types';
-import { PRIORITY_LABELS } from '../types';
+import type { Customer, TicketChannel, TicketPriority } from '../types';
+import { CHANNEL_LABELS, PRIORITY_LABELS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
 const CATEGORIES = ['Infra', 'Security', 'Sieť', 'Backup', 'Aplikácie', 'Hardvér', 'Iné'];
@@ -23,6 +23,7 @@ export function NewTicketPage() {
   const [customerId, setCustomerId] = useState('');
   const [newCustomerName, setNewCustomerName] = useState('');
   const [category, setCategory] = useState('');
+  const [channel, setChannel] = useState<TicketChannel>('web');
   const [priority, setPriority] = useState<TicketPriority>('normalna');
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
@@ -67,7 +68,7 @@ export function NewTicketPage() {
         requesterEmail: user?.email ?? undefined,
         category: category || 'Iné',
         priority,
-        channel: 'web',
+        channel: isClient ? 'web' : channel,
         autoAssign: !isClient,
       });
       navigate(`/tickets/${id}`);
@@ -89,7 +90,7 @@ export function NewTicketPage() {
 
       <form onSubmit={handleSubmit}>
         <Section title="1. Klasifikácia" subtitle="Základné zaradenie a zodpovednosť.">
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isClient ? '1fr 1fr' : '1fr 1fr 1fr', gap: 16 }}>
             <Field label="Zákazník">
               {isClient && profile?.role === 'klient' ? (
                 <input value={profile.customerName} disabled style={{ ...inputStyle, color: 'var(--color-text-faint)' }} />
@@ -128,6 +129,17 @@ export function NewTicketPage() {
                 ))}
               </select>
             </Field>
+            {!isClient && (
+              <Field label="Kanál">
+                <select value={channel} onChange={(e) => setChannel(e.target.value as TicketChannel)} style={inputStyle}>
+                  {(Object.entries(CHANNEL_LABELS) as [TicketChannel, string][]).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            )}
           </div>
 
           <div style={{ marginTop: 16 }}>

@@ -1,13 +1,12 @@
 let ctx: AudioContext | null = null;
 
-/** Plays a short, soft two-note chime. No external audio assets. */
-export function playChatDing() {
+function playTones(tones: { freq: number; start: number }[]) {
   try {
     if (!ctx) ctx = new AudioContext();
     if (ctx.state === 'suspended') ctx.resume();
     const now = ctx.currentTime;
 
-    [{ freq: 740, start: 0 }, { freq: 988, start: 0.12 }].forEach(({ freq, start }) => {
+    tones.forEach(({ freq, start }) => {
       const osc = ctx!.createOscillator();
       const gain = ctx!.createGain();
       osc.type = 'sine';
@@ -23,4 +22,15 @@ export function playChatDing() {
   } catch {
     // Audio not available (e.g. autoplay restrictions) - fail silently.
   }
+}
+
+/** Plays a short, soft two-note chime. No external audio assets. */
+export function playChatDing() {
+  playTones([{ freq: 740, start: 0 }, { freq: 988, start: 0.12 }]);
+}
+
+/** Distinct three-note ping for a brand new ticket - a bit brighter/more
+ * urgent than the chat chime so the two are easy to tell apart by ear. */
+export function playNewTicketPing() {
+  playTones([{ freq: 880, start: 0 }, { freq: 1174, start: 0.1 }, { freq: 1568, start: 0.2 }]);
 }

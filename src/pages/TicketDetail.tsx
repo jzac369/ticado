@@ -12,7 +12,7 @@ import {
   updateTicketTags,
 } from '../firebase/tickets';
 import type { ActivityEntry, Attachment, Ticket, TicketMessage, TicketStatus } from '../types';
-import { STATUS_LABELS } from '../types';
+import { STATUS_LABELS, PRIORITY_LABELS, CHANNEL_LABELS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { PriorityBadge, StatusBadge } from '../components/Badges';
 import { subscribeAgents, type Agent } from '../firebase/agents';
@@ -214,14 +214,37 @@ export function TicketDetailPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-        <div style={{ fontSize: 13 }}>
-          <Link to="/tickets" style={{ color: 'var(--color-text-muted)' }}>
-            Tickety
-          </Link>{' '}
-          / <span style={{ fontWeight: 700 }}>{ticket.code}</span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+        <div>
+          <div style={{ fontSize: 12.5, marginBottom: 4 }}>
+            <Link to="/tickets" style={{ color: 'var(--color-text-muted)' }}>
+              Tickety
+            </Link>{' '}
+            / <span style={{ fontWeight: 700 }}>{ticket.code}</span>
+          </div>
+          <h1 style={{ fontSize: 22, margin: '0 0 4px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            {ticket.subject}
+            {ticket.archived && (
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: 'var(--color-text-faint)',
+                  background: 'var(--color-surface-2)',
+                  borderRadius: 999,
+                  padding: '2px 9px',
+                }}
+              >
+                🗄 Archivovaný
+              </span>
+            )}
+          </h1>
+          <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>
+            Ticket / {ticket.code} · Vytvorený {fmt(ticket.createdAt)} · {ticket.customerName}
+            {ticket.department && ` - ${ticket.department}`} · {CHANNEL_LABELS[ticket.channel]}
+          </div>
         </div>
-        <div className="no-print" style={{ display: 'flex', gap: 8 }}>
+        <div className="no-print" style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           {!isClient && (
             <button
               onClick={handleArchiveToggle}
@@ -232,6 +255,7 @@ export function TicketDetailPage() {
                 background: 'var(--color-surface)',
                 fontSize: 12.5,
                 fontWeight: 600,
+                whiteSpace: 'nowrap',
               }}
             >
               {ticket.archived ? '📤 Obnoviť z archívu' : '🗄 Archivovať'}
@@ -246,6 +270,7 @@ export function TicketDetailPage() {
               background: 'var(--color-surface)',
               fontSize: 12.5,
               fontWeight: 600,
+              whiteSpace: 'nowrap',
             }}
           >
             🖨 Tlačiť / PDF
@@ -253,34 +278,30 @@ export function TicketDetailPage() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-        <StatusBadge status={ticket.status} />
-        <PriorityBadge priority={ticket.priority} />
-        {ticket.archived && (
-          <span
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 4,
-              padding: '3px 10px',
-              borderRadius: 999,
-              fontSize: 12.5,
-              fontWeight: 600,
-              color: 'var(--color-text-faint)',
-              background: 'var(--color-surface-2)',
-            }}
-          >
-            🗄 Archivovaný
-          </span>
-        )}
+      <div
+        style={{
+          display: 'flex',
+          gap: 0,
+          background: 'var(--color-surface)',
+          border: '1px solid var(--color-border)',
+          borderRadius: 'var(--radius-lg)',
+          marginBottom: 16,
+          overflow: 'hidden',
+        }}
+      >
+        <QuickStat label="Stav">
+          <StatusBadge status={ticket.status} />
+        </QuickStat>
+        <QuickStat label="Priorita">
+          <PriorityBadge priority={ticket.priority} />
+        </QuickStat>
+        <QuickStat label="Kanál" last>
+          <span style={{ fontSize: 13.5, fontWeight: 600 }}>{CHANNEL_LABELS[ticket.channel]}</span>
+        </QuickStat>
       </div>
 
-      <h1 style={{ fontSize: 24, margin: '0 0 6px' }}>{ticket.subject}</h1>
-      <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 24 }}>
-        Vytvorený {fmt(ticket.createdAt)} · {ticket.customerName} · {ticket.requesterName}
-      </div>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 20, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16, alignItems: 'start' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div
           style={{
             background: 'var(--color-surface)',
@@ -289,7 +310,7 @@ export function TicketDetailPage() {
             padding: 20,
           }}
         >
-          <div style={{ fontWeight: 700, marginBottom: 4 }}>Komunikácia</div>
+          <div style={{ fontWeight: 700, marginBottom: 4 }}>💬 Komunikácia</div>
           <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)', marginBottom: 16 }}>
             {visibleMessages.length} správ a poznámok v tickete
           </div>
@@ -351,9 +372,20 @@ export function TicketDetailPage() {
               <div style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Zatiaľ žiadna komunikácia.</div>
             )}
           </div>
+        </div>
 
+        <div
+          style={{
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: 20,
+          }}
+          className="no-print"
+        >
+          <div style={{ fontWeight: 700, marginBottom: 12 }}>✎ Odpovedať</div>
           {!closed ? (
-            <form onSubmit={handleReply} className="no-print" style={{ marginTop: 20 }}>
+            <form onSubmit={handleReply}>
               {!isClient && templates.length > 0 && (
                 <div style={{ position: 'relative', marginBottom: 8 }}>
                   <button
@@ -568,132 +600,142 @@ export function TicketDetailPage() {
           )}
         </div>
 
+        </div>
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <Panel title="Stav ticketu">
-            {isClient ? (
-              <div style={{ padding: '9px 10px', background: 'var(--color-surface-2)', borderRadius: 'var(--radius-md)', fontWeight: 600, fontSize: 13.5 }}>
-                {STATUS_LABELS[ticket.status]}
-              </div>
-            ) : (
-              <select
-                value={ticket.status}
-                onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
-                style={selectStyle}
-              >
-                {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v}
-                  </option>
-                ))}
-              </select>
+          <Panel title="ℹ️ Detaily ticketu">
+            <DetailRow icon="✓" label="Stav ticketu" first>
+              {isClient ? (
+                <span style={{ fontWeight: 600, fontSize: 13.5 }}>{STATUS_LABELS[ticket.status]}</span>
+              ) : (
+                <select
+                  value={ticket.status}
+                  onChange={(e) => handleStatusChange(e.target.value as TicketStatus)}
+                  className="no-print"
+                  style={inlineSelectStyle}
+                >
+                  {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </DetailRow>
+            <DetailRow icon="🚩" label="Priorita">
+              <span style={{ fontWeight: 600, fontSize: 13.5 }}>{PRIORITY_LABELS[ticket.priority]}</span>
+            </DetailRow>
+            <DetailRow icon="🌐" label="Kanál">
+              <span style={{ fontWeight: 600, fontSize: 13.5 }}>{CHANNEL_LABELS[ticket.channel]}</span>
+            </DetailRow>
+            <DetailRow icon="📅" label="Vytvorený">
+              <span style={{ fontWeight: 600, fontSize: 13.5 }}>{fmt(ticket.createdAt)}</span>
+            </DetailRow>
+            {!isClient && (
+              <DetailRow icon="👤" label="Priradenie">
+                <select
+                  value={ticket.assignedTo ?? ''}
+                  onChange={(e) => handleAssign(e.target.value)}
+                  className="no-print"
+                  style={inlineSelectStyle}
+                >
+                  <option value="">— Bez priradenia —</option>
+                  {agents.map((a) => (
+                    <option key={a.id} value={a.name}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              </DetailRow>
             )}
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 14 }}>
-              <InfoField label="Priorita" value={ticket.priority} />
-              <InfoField label="Kanál" value={ticket.channel} />
-              <InfoField label="Vytvorený" value={fmt(ticket.createdAt)} />
-            </div>
-          </Panel>
-
-          {!isClient && (
-            <div className="no-print">
-            <Panel title="Priradenie">
-              <select value={ticket.assignedTo ?? ''} onChange={(e) => handleAssign(e.target.value)} style={selectStyle}>
-                <option value="">— Bez priradenia —</option>
-                {agents.map((a) => (
-                  <option key={a.id} value={a.name}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-            </Panel>
-            </div>
-          )}
-
-          {!isClient && (
-          <div className="no-print">
-          <Panel title="Štítky">
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: (ticket.tags?.length ?? 0) > 0 ? 10 : 0 }}>
-              {(ticket.tags ?? []).map((tag) => (
-                <span
-                  key={tag}
+            <DetailRow icon="🧑" label="Žiadateľ" align="start">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div
                   style={{
+                    width: 28,
+                    height: 28,
+                    flexShrink: 0,
+                    borderRadius: '50%',
+                    background: 'var(--color-primary)',
+                    color: '#fff',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 5,
+                    justifyContent: 'center',
+                    fontWeight: 700,
                     fontSize: 12,
-                    fontWeight: 600,
-                    padding: '3px 8px',
-                    borderRadius: 999,
-                    background: 'var(--color-primary-bg)',
-                    color: 'var(--color-primary)',
                   }}
                 >
-                  {tag}
-                  <button
-                    onClick={() => removeTag(tag)}
-                    style={{ border: 'none', background: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 700, padding: 0 }}
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
-            </div>
-            <form onSubmit={handleAddTag} style={{ display: 'flex', gap: 6 }}>
-              <input
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                placeholder="Nový štítok…"
-                style={{ ...selectStyle, flex: 1 }}
-              />
-              <button
-                type="submit"
-                style={{
-                  padding: '0 12px',
-                  border: '1px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                  background: 'var(--color-surface-2)',
-                  fontWeight: 700,
-                }}
-              >
-                +
-              </button>
-            </form>
-          </Panel>
-          </div>
-          )}
-
-          <Panel title="Žiadateľ">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div
-                style={{
-                  width: 34,
-                  height: 34,
-                  borderRadius: '50%',
-                  background: 'var(--color-primary)',
-                  color: '#fff',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontWeight: 700,
-                }}
-              >
-                {ticket.requesterName.slice(0, 1).toUpperCase()}
-              </div>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 13.5 }}>{ticket.requesterName}</div>
-                <div style={{ fontSize: 12, color: 'var(--color-text-faint)' }}>
-                  {ticket.customerName}
-                  {ticket.department && <> · {ticket.department}</>}
+                  {ticket.requesterName.slice(0, 1).toUpperCase()}
                 </div>
-                {ticket.requesterEmail && (
-                  <div style={{ fontSize: 11.5, color: 'var(--color-text-faint)' }}>{ticket.requesterEmail}</div>
-                )}
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{ticket.requesterName}</div>
+                  <div style={{ fontSize: 11, color: 'var(--color-text-faint)' }}>
+                    {ticket.customerName}
+                    {ticket.department && <> · {ticket.department}</>}
+                  </div>
+                  {ticket.requesterEmail && (
+                    <div style={{ fontSize: 10.5, color: 'var(--color-text-faint)' }}>{ticket.requesterEmail}</div>
+                  )}
+                </div>
               </div>
-            </div>
+            </DetailRow>
+            {!isClient && (
+              <DetailRow icon="🏷" label="Štítky" align="start">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+                  {(ticket.tags?.length ?? 0) > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, justifyContent: 'flex-end' }}>
+                      {(ticket.tags ?? []).map((tag) => (
+                        <span
+                          key={tag}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 5,
+                            fontSize: 12,
+                            fontWeight: 600,
+                            padding: '3px 8px',
+                            borderRadius: 999,
+                            background: 'var(--color-primary-bg)',
+                            color: 'var(--color-primary)',
+                          }}
+                        >
+                          {tag}
+                          <button
+                            onClick={() => removeTag(tag)}
+                            style={{ border: 'none', background: 'none', color: 'var(--color-primary)', cursor: 'pointer', fontWeight: 700, padding: 0 }}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <form onSubmit={handleAddTag} className="no-print" style={{ display: 'flex', gap: 6 }}>
+                    <input
+                      value={tagInput}
+                      onChange={(e) => setTagInput(e.target.value)}
+                      placeholder="Nový štítok…"
+                      style={{ ...selectStyle, width: 140 }}
+                    />
+                    <button
+                      type="submit"
+                      style={{
+                        padding: '0 12px',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)',
+                        background: 'var(--color-surface-2)',
+                        fontWeight: 700,
+                      }}
+                    >
+                      +
+                    </button>
+                  </form>
+                </div>
+              </DetailRow>
+            )}
           </Panel>
 
-          <Panel title="Časová os zmien">
+          <Panel title="🕐 História zmien">
             <TicketTimeline entries={activity.slice(0, 12)} />
           </Panel>
         </div>
@@ -718,13 +760,50 @@ function Panel({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-function InfoField({ label, value }: { label: string; value: string }) {
+function QuickStat({ label, children, last = false }: { label: string; children: ReactNode; last?: boolean }) {
   return (
-    <div style={{ background: 'var(--color-surface-2)', borderRadius: 'var(--radius-sm)', padding: '8px 10px' }}>
-      <div style={{ fontSize: 10.5, color: 'var(--color-text-faint)', fontWeight: 700, marginBottom: 2 }}>
-        {label.toUpperCase()}
+    <div
+      style={{
+        flex: 1,
+        padding: '12px 18px',
+        borderRight: last ? 'none' : '1px solid var(--color-border)',
+      }}
+    >
+      <div style={{ fontSize: 10.5, color: 'var(--color-text-faint)', fontWeight: 700, marginBottom: 4 }}>{label}</div>
+      {children}
+    </div>
+  );
+}
+
+function DetailRow({
+  icon,
+  label,
+  children,
+  align = 'center',
+  first = false,
+}: {
+  icon: string;
+  label: string;
+  children: ReactNode;
+  align?: 'center' | 'start';
+  first?: boolean;
+}) {
+  return (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: align === 'start' ? 'flex-start' : 'center',
+        gap: 12,
+        padding: '10px 0',
+        borderTop: first ? 'none' : '1px solid var(--color-border)',
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: 'var(--color-text-muted)', flexShrink: 0 }}>
+        <span>{icon}</span>
+        {label}
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600 }}>{value}</div>
+      <div style={{ textAlign: 'right' }}>{children}</div>
     </div>
   );
 }
@@ -735,4 +814,14 @@ const selectStyle: CSSProperties = {
   border: '1px solid var(--color-border)',
   borderRadius: 'var(--radius-md)',
   background: 'var(--color-surface)',
+};
+
+const inlineSelectStyle: CSSProperties = {
+  border: 'none',
+  background: 'none',
+  fontWeight: 600,
+  fontSize: 13.5,
+  textAlign: 'right',
+  cursor: 'pointer',
+  color: 'var(--color-text)',
 };

@@ -59,10 +59,10 @@ export function LineAreaChart({ categories, series, height = 220 }: Props) {
   return (
     <div style={{ width: '100%', overflowX: 'auto' }}>
       {series.length > 1 && (
-        <div style={{ display: 'flex', gap: 16, marginBottom: 8, fontSize: 12 }}>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 8, fontSize: 10.5 }}>
           {series.map((s) => (
             <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ width: 10, height: 10, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: s.color, display: 'inline-block' }} />
               <span style={{ color: 'var(--color-text-muted)' }}>{s.label}</span>
             </div>
           ))}
@@ -71,15 +71,15 @@ export function LineAreaChart({ categories, series, height = 220 }: Props) {
       <svg viewBox={`0 0 ${width} ${height}`} width="100%" style={{ display: 'block', overflow: 'visible' }}>
         {ticksY.map((t) => (
           <g key={t}>
-            <line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} stroke="var(--chart-grid)" strokeWidth={1} />
-            <text x={PAD.left - 8} y={y(t)} textAnchor="end" dominantBaseline="middle" fontSize={10.5} fill="var(--chart-axis)">
+            <line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} stroke="var(--chart-grid)" strokeWidth={0.5} />
+            <text x={PAD.left - 8} y={y(t)} textAnchor="end" dominantBaseline="middle" fontSize={9} fill="var(--chart-axis)">
               {t}
             </text>
           </g>
         ))}
 
         {series.map((s) => (
-          <path key={`${s.key}-area`} d={areaPath(s.values)} fill={s.color} opacity={0.08} />
+          <path key={`${s.key}-area`} d={areaPath(s.values)} fill={s.color} opacity={0.06} />
         ))}
         {series.map((s) => (
           <path
@@ -87,7 +87,7 @@ export function LineAreaChart({ categories, series, height = 220 }: Props) {
             d={linePath(s.values)}
             fill="none"
             stroke={s.color}
-            strokeWidth={1.5}
+            strokeWidth={1}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -98,10 +98,10 @@ export function LineAreaChart({ categories, series, height = 220 }: Props) {
               key={`${s.key}-dot-${i}`}
               cx={x(i)}
               cy={y(v)}
-              r={hover === i ? 4 : 2.5}
+              r={hover === i ? 3.5 : 1.8}
               fill={s.color}
               stroke="var(--color-surface)"
-              strokeWidth={1.5}
+              strokeWidth={1}
             />
           )),
         )}
@@ -109,7 +109,7 @@ export function LineAreaChart({ categories, series, height = 220 }: Props) {
         {categories.map((c, i) => {
           if (n > 8 && i % Math.ceil(n / 7) !== 0 && i !== n - 1) return null;
           return (
-            <text key={c} x={x(i)} y={height - 4} textAnchor="middle" fontSize={10.5} fill="var(--chart-axis)">
+            <text key={c} x={x(i)} y={height - 4} textAnchor="middle" fontSize={9} fill="var(--chart-axis)">
               {c}
             </text>
           );
