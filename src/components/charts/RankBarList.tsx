@@ -10,14 +10,14 @@ export interface RankItem {
 export function RankBarList({ items, color = 'var(--chart-series-1)' }: { items: RankItem[]; color?: string }) {
   const max = Math.max(1, ...items.map((i) => i.value));
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, height: '100%', justifyContent: 'space-between' }}>
       {items.map((item) => (
         <div key={item.label}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12.5, marginBottom: 4 }}>
-            <span style={{ fontWeight: 600 }}>{item.label}</span>
-            <span style={{ fontWeight: 700 }}>{item.displayValue ?? item.value}</span>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11.5, marginBottom: 3 }}>
+            <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>
+            <span style={{ fontWeight: 700, flexShrink: 0, marginLeft: 6 }}>{item.displayValue ?? item.value}</span>
           </div>
-          <div style={{ height: 8, background: 'var(--color-surface-2)', borderRadius: 999 }}>
+          <div style={{ height: 6, background: 'var(--color-surface-2)', borderRadius: 999 }}>
             <div
               style={{
                 height: '100%',
@@ -28,7 +28,7 @@ export function RankBarList({ items, color = 'var(--chart-series-1)' }: { items:
             />
           </div>
           {item.sublabel && (
-            <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 3 }}>{item.sublabel}</div>
+            <div style={{ fontSize: 10, color: 'var(--color-text-faint)', marginTop: 2 }}>{item.sublabel}</div>
           )}
         </div>
       ))}

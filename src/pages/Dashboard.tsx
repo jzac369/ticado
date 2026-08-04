@@ -12,7 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ClientTicketsPage } from './ClientTickets';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const PANEL_HEIGHT = 168;
+const PANEL_HEIGHT = 204;
 
 function dayKey(ms: number) {
   return new Date(ms).toLocaleDateString('sk-SK', { day: '2-digit', month: '2-digit' });
@@ -418,16 +418,20 @@ export function DashboardPage() {
               { key: 'created', label: 'Vytvorené', color: 'var(--chart-series-1)', values: trend.map((b) => b.created) },
               { key: 'resolved', label: 'Vyriešené', color: 'var(--chart-series-2)', values: trend.map((b) => b.resolved) },
             ]}
-            height={62}
+            height={96}
           />
         </Panel>
 
         <Panel title="Podľa priority" subtitle="Otvorené">
-          <DonutChart data={priorityDonut} size={46} />
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center' }}>
+            <DonutChart data={priorityDonut} size={86} />
+          </div>
         </Panel>
 
         <Panel title="Podľa stavu" subtitle="Všetky">
-          <DonutChart data={statusDonut} size={46} />
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center' }}>
+            <DonutChart data={statusDonut} size={86} />
+          </div>
         </Panel>
 
         <Panel title="Priemerný čas riešenia" subtitle="Podľa priority">
@@ -445,7 +449,9 @@ export function DashboardPage() {
         </Panel>
 
         <Panel title="Kanály ticketov" subtitle={`${days}d`}>
-          <DonutChart data={channelDonut} size={46} />
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center' }}>
+            <DonutChart data={channelDonut} size={86} />
+          </div>
         </Panel>
 
         <Panel title="Najviac otvorených" subtitle="Zákazníci">
