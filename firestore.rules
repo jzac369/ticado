@@ -5,11 +5,12 @@ service cloud.firestore {
     function isSignedIn() {
       return request.auth != null;
     }
+    function myEmail() {
+      return request.auth.token.email.lower();
+    }
 
     // A "client" is a signed-in user with a users/{uid} profile whose role
-    // is 'klient' (created via "Pridať kolegu"). Everyone else who is
-    // signed in (agents added directly in Firebase Auth) is treated as
-    // full-access staff.
+    // is 'klient' (created via "Pridať kolegu").
     function myProfile() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
     }
@@ -18,9 +19,22 @@ service cloud.firestore {
         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
         myProfile().role == 'klient';
     }
-    function isAgent() {
-      return isSignedIn() && !isClient();
+
+    // An "agent" is a signed-in, non-client user whose email is explicitly
+    // present in agentAllowlist. This closes the gap where anyone who can
+    // sign themselves up via the public Firebase Auth API would otherwise
+    // default to full staff access just by not having a client profile.
+    function allowlistEntry() {
+      return get(/databases/$(database)/documents/agentAllowlist/$(myEmail())).data;
     }
+    function isAgent() {
+      return isSignedIn() && !isClient() &&
+        exists(/databases/$(database)/documents/agentAllowlist/$(myEmail()));
+    }
+    function isMaster() {
+      return isAgent() && allowlistEntry().master == true;
+    }
+
     function myCustomerId() {
       return myProfile().customerId;
     }
@@ -71,8 +85,21 @@ service cloud.firestore {
       allow write: if isAgent();
     }
 
+    // Technician roster: any agent can read it (needed for ticket
+    // assignment) and self-service their own record ("Môj profil"), but
+    // only the master agent can add/edit/remove other technicians.
     match /agents/{agentId} {
-      allow read, write: if isAgent();
+      allow read: if isAgent();
+      allow create: if isMaster() || (isAgent() && request.resource.data.email.lower() == myEmail());
+      allow update: if isMaster() || (isAgent() && resource.data.email.lower() == myEmail() && request.resource.data.email.lower() == myEmail());
+      allow delete: if isMaster();
+    }
+
+    // Who is allowed to sign in as staff at all - only the master agent
+    // manages this list.
+    match /agentAllowlist/{email} {
+      allow read: if isAgent();
+      allow write: if isMaster();
     }
 
     match /templates/{templateId} {

@@ -9,6 +9,7 @@ export function LoginPage() {
   const location = useLocation();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [remember, setRemember] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,7 +23,7 @@ export function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await login(email, password);
+      await login(email, password, remember);
       navigate('/', { replace: true });
     } catch {
       setError('Nesprávne prihlasovacie údaje.');
@@ -42,7 +43,7 @@ export function LoginPage() {
     >
       <div
         style={{
-          background: 'linear-gradient(160deg, #1e1b4b 0%, #312e81 45%, #4338ca 100%)',
+          background: 'linear-gradient(160deg, #4a1524 0%, #6f2035 45%, #8b2942 100%)',
           color: '#fff',
           padding: '56px 64px',
           display: 'flex',
@@ -51,15 +52,14 @@ export function LoginPage() {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <svg width={32} height={32} viewBox="0 0 48 48" fill="none">
-            <rect x="2" y="2" width="44" height="44" rx="12" fill="rgba(255,255,255,0.15)" />
-            <path
-              d="M14 19a3 3 0 0 1 3-3h14a3 3 0 0 1 3 3v2a2.5 2.5 0 0 0 0 5v2a3 3 0 0 1-3 3H17a3 3 0 0 1-3-3v-2a2.5 2.5 0 0 0 0-5v-2Z"
-              fill="white"
-            />
-            <path d="m21 23.5 2.4 2.5L28 21" stroke="#4338CA" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          <span style={{ fontWeight: 700, fontSize: 20 }}>Ticado</span>
+          <img
+            src={`${import.meta.env.BASE_URL}rona-logo.png`}
+            alt="RONA"
+            width={32}
+            height={32}
+            style={{ borderRadius: 7, display: 'block' }}
+          />
+          <span style={{ fontWeight: 700, fontSize: 20 }}>RONA</span>
         </div>
 
         <div>
@@ -75,7 +75,7 @@ export function LoginPage() {
               marginBottom: 20,
             }}
           >
-            TICADO SERVICEDESK
+            RONA SERVICEDESK
           </span>
           <h1 style={{ fontSize: 42, lineHeight: 1.15, margin: '0 0 16px', fontWeight: 600 }}>
             Podpora a tickety
@@ -83,7 +83,7 @@ export function LoginPage() {
             na jednom mieste.
           </h1>
           <p style={{ fontSize: 16, opacity: 0.85, maxWidth: 420, margin: 0 }}>
-            Tickety, SLA, zákazníci a monitoring v jednom prehľadnom pracovnom priestore.
+            Tickety, zamestnanci a IT podpora RONA v jednom prehľadnom pracovnom priestore.
           </p>
         </div>
 
@@ -121,7 +121,7 @@ export function LoginPage() {
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: 'var(--color-text-faint)' }}>
                 VITAJTE SPÄŤ
               </div>
-              <div style={{ fontSize: 17, fontWeight: 700 }}>Prihlásenie do Ticado</div>
+              <div style={{ fontSize: 17, fontWeight: 700 }}>Prihlásenie do RONA ServiceDesk</div>
             </div>
           </div>
 
@@ -133,7 +133,7 @@ export function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="meno@firma.sk"
+            placeholder="meno@rona.sk"
             style={inputStyle}
           />
 
@@ -146,6 +146,11 @@ export function LoginPage() {
             placeholder="••••••••"
             style={inputStyle}
           />
+
+          <label style={{ display: 'flex', alignItems: 'center', gap: 7, marginTop: 14, fontSize: 12.5, cursor: 'pointer' }}>
+            <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+            Zapamätať heslo na tomto zariadení
+          </label>
 
           {error && (
             <div style={{ marginTop: 12, fontSize: 13, color: 'var(--color-danger)' }}>{error}</div>

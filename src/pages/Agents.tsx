@@ -1,8 +1,13 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { subscribeAgents, createAgent, updateAgent, deleteAgent, type Agent } from '../firebase/agents';
+import { grantAgentAccess, checkAgentAccess } from '../firebase/allowlist';
+import { useAuth } from '../contexts/AuthContext';
 
 export function AgentsPage() {
+  const { profile } = useAuth();
+  const isMaster = profile?.role === 'agent' && profile.master;
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [access, setAccess] = useState<Record<string, boolean>>({});
   const [name, setName] = useState('');
   const [position, setPosition] = useState('');
   const [email, setEmail] = useState('');
@@ -10,6 +15,19 @@ export function AgentsPage() {
   const [editDraft, setEditDraft] = useState<Partial<Agent>>({});
 
   useEffect(() => subscribeAgents(setAgents), []);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const entries = await Promise.all(
+        agents.map(async (a) => [a.id, a.email ? await checkAgentAccess(a.email) : false] as const),
+      );
+      if (!cancelled) setAccess(Object.fromEntries(entries));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [agents]);
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault();
@@ -39,45 +57,57 @@ export function AgentsPage() {
     await deleteAgent(a.id);
   }
 
+  async function handleGrantAccess(a: Agent) {
+    if (!a.email) {
+      window.alert('Najprv vyplňte email technika.');
+      return;
+    }
+    await grantAgentAccess(a.email);
+    setAccess((s) => ({ ...s, [a.id]: true }));
+  }
+
   return (
     <div>
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NASTAVENIA</div>
       <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>IT technici</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
         Zoznam technikov, ktorí si medzi sebou môžu priraďovať tickety.
+        {!isMaster && ' Úpravy zoznamu a prístupov môže robiť len hlavný administrátor.'}
       </p>
 
-      <form
-        onSubmit={handleAdd}
-        style={{
-          display: 'flex',
-          gap: 10,
-          marginBottom: 20,
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
-          borderRadius: 'var(--radius-lg)',
-          padding: 16,
-          flexWrap: 'wrap',
-        }}
-      >
-        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Meno IT technika" style={inputStyle} required />
-        <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Pozícia" style={inputStyle} />
-        <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Emailová adresa" style={inputStyle} />
-        <button
-          type="submit"
+      {isMaster && (
+        <form
+          onSubmit={handleAdd}
           style={{
-            padding: '10px 18px',
-            background: 'var(--color-primary)',
-            color: '#fff',
-            border: 'none',
-            borderRadius: 'var(--radius-md)',
-            fontWeight: 700,
-            whiteSpace: 'nowrap',
+            display: 'flex',
+            gap: 10,
+            marginBottom: 20,
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-lg)',
+            padding: 16,
+            flexWrap: 'wrap',
           }}
         >
-          + Pridať technika
-        </button>
-      </form>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Meno IT technika" style={inputStyle} required />
+          <input value={position} onChange={(e) => setPosition(e.target.value)} placeholder="Pozícia" style={inputStyle} />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Emailová adresa" style={inputStyle} />
+          <button
+            type="submit"
+            style={{
+              padding: '10px 18px',
+              background: 'var(--color-primary)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 'var(--radius-md)',
+              fontWeight: 700,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            + Pridať technika
+          </button>
+        </form>
+      )}
 
       <div
         style={{
@@ -90,7 +120,7 @@ export function AgentsPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
-              {['Meno', 'Pozícia', 'Email', 'Stav', ''].map((h) => (
+              {['Meno', 'Pozícia', 'Email', 'Prístup do systému', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, color: 'var(--color-text-faint)' }}>
                   {h}
                 </th>
@@ -107,6 +137,7 @@ export function AgentsPage() {
             )}
             {agents.map((a) => {
               const isEditing = editingId === a.id;
+              const hasAccess = access[a.id];
               return (
                 <tr key={a.id} style={{ borderTop: '1px solid var(--color-border)' }}>
                   {isEditing ? (
@@ -132,20 +163,7 @@ export function AgentsPage() {
                           style={cellInputStyle}
                         />
                       </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: a.active ? 'var(--color-success)' : 'var(--color-text-faint)',
-                            background: a.active ? 'var(--color-success-bg)' : 'var(--color-surface-2)',
-                            padding: '2px 10px',
-                            borderRadius: 999,
-                          }}
-                        >
-                          {a.active ? 'Aktívny' : 'Neaktívny'}
-                        </span>
-                      </td>
+                      <td style={{ padding: '12px 14px', color: 'var(--color-text-faint)' }}>—</td>
                       <td style={{ padding: '8px 14px', whiteSpace: 'nowrap' }}>
                         <button onClick={() => saveEdit(a.id)} style={saveBtnStyle}>
                           Uložiť
@@ -161,26 +179,29 @@ export function AgentsPage() {
                       <td style={{ padding: '12px 14px' }}>{a.position || '—'}</td>
                       <td style={{ padding: '12px 14px' }}>{a.email || '—'}</td>
                       <td style={{ padding: '12px 14px' }}>
-                        <span
-                          style={{
-                            fontSize: 12,
-                            fontWeight: 600,
-                            color: a.active ? 'var(--color-success)' : 'var(--color-text-faint)',
-                            background: a.active ? 'var(--color-success-bg)' : 'var(--color-surface-2)',
-                            padding: '2px 10px',
-                            borderRadius: 999,
-                          }}
-                        >
-                          {a.active ? 'Aktívny' : 'Neaktívny'}
-                        </span>
+                        {hasAccess ? (
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-success)', background: 'var(--color-success-bg)', padding: '2px 10px', borderRadius: 999 }}>
+                            ✓ Povolený
+                          </span>
+                        ) : isMaster ? (
+                          <button onClick={() => handleGrantAccess(a)} style={{ ...actionBtnBase, color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }}>
+                            Udeliť prístup
+                          </button>
+                        ) : (
+                          <span style={{ fontSize: 12, color: 'var(--color-text-faint)' }}>— Nepovolený —</span>
+                        )}
                       </td>
                       <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
-                        <button onClick={() => startEdit(a)} style={editBtnStyle}>
-                          Upraviť
-                        </button>
-                        <button onClick={() => handleDelete(a)} style={deleteBtnStyle}>
-                          Zmazať
-                        </button>
+                        {isMaster && (
+                          <>
+                            <button onClick={() => startEdit(a)} style={editBtnStyle}>
+                              Upraviť
+                            </button>
+                            <button onClick={() => handleDelete(a)} style={deleteBtnStyle}>
+                              Zmazať
+                            </button>
+                          </>
+                        )}
                       </td>
                     </>
                   )}

@@ -1,22 +1,26 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import {
+  browserLocalPersistence,
+  browserSessionPersistence,
   onAuthStateChanged,
+  setPersistence,
   signInWithEmailAndPassword,
   signOut,
   type User,
 } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 
 export type UserProfile =
-  | { role: 'agent' }
-  | { role: 'klient'; customerId: string; customerName: string };
+  | { role: 'agent'; master: boolean }
+  | { role: 'klient'; customerId: string; customerName: string }
+  | { role: 'unauthorized' };
 
 interface AuthContextValue {
   user: User | null;
   profile: UserProfile | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string, remember?: boolean) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -38,17 +42,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!user) return;
-    const unsub = onSnapshot(doc(db, 'users', user.uid), (snap) => {
+    const unsub = onSnapshot(doc(db, 'users', user.uid), async (snap) => {
       if (snap.exists() && snap.data().role === 'klient') {
         setProfile({ role: 'klient', customerId: snap.data().customerId, customerName: snap.data().customerName });
+        return;
+      }
+      if (!user.email) {
+        setProfile({ role: 'unauthorized' });
+        return;
+      }
+      const allowlistSnap = await getDoc(doc(db, 'agentAllowlist', user.email.toLowerCase()));
+      if (allowlistSnap.exists()) {
+        setProfile({ role: 'agent', master: allowlistSnap.data().master === true });
       } else {
-        setProfile({ role: 'agent' });
+        setProfile({ role: 'unauthorized' });
       }
     });
     return unsub;
   }, [user]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, remember = true) => {
+    await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
     await signInWithEmailAndPassword(auth, email, password);
   };
 
