@@ -76,7 +76,7 @@ async function nextTicketCode(): Promise<string> {
     tx.set(counterRef, { value: next }, { merge: true });
     return next;
   });
-  return `TKT${String(nextNumber).padStart(6, '0')}`;
+  return `TIK${String(nextNumber).padStart(6, '0')}`;
 }
 
 async function nextRoundRobinAgent(): Promise<string | null> {
