@@ -59,7 +59,7 @@ export function GeneralSettingsPage() {
           />
         </div>
 
-        <div style={{ marginBottom: 20 }}>
+        <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Prevádzkové hodiny podpory</div>
           <input
             value={settings.supportHours}
@@ -69,9 +69,23 @@ export function GeneralSettingsPage() {
           />
         </div>
 
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, fontWeight: 600, fontSize: 13.5 }}>
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Text v päte podpornej stránky</div>
+          <input
+            value={settings.supportFooterText}
+            onChange={(e) => set('supportFooterText', e.target.value)}
+            style={inputStyle}
+          />
+        </div>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontWeight: 600, fontSize: 13.5 }}>
           <input type="checkbox" checked={settings.liveChatEnabled} onChange={(e) => set('liveChatEnabled', e.target.checked)} />
           Live chat je zapnutý pre klientov
+        </label>
+
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, fontWeight: 600, fontSize: 13.5 }}>
+          <input type="checkbox" checked={settings.chatSoundEnabled} onChange={(e) => set('chatSoundEnabled', e.target.checked)} />
+          Prehrávať zvukový tón pri novej live chat správe
         </label>
 
         <button

@@ -157,6 +157,20 @@ a {
   border-radius: 8px;
 }
 
+@keyframes chatBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.chat-icon-blink {
+  animation: chatBlink 1s ease-in-out infinite;
+}
+
 @media print {
   .no-print {
     display: none !important;

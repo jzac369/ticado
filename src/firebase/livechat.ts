@@ -11,6 +11,8 @@ export interface LiveChat {
   createdAt: Timestamp | null;
   lastMessageAt: Timestamp | null;
   lastMessagePreview?: string;
+  lastMessageAuthor?: 'visitor' | 'agent';
+  agentUnread?: boolean;
 }
 
 export interface ChatMessage {
@@ -51,6 +53,8 @@ export async function createLiveChat(visitorName: string, visitorEmail?: string)
     createdAt: serverTimestamp(),
     lastMessageAt: serverTimestamp(),
     lastMessagePreview: '',
+    lastMessageAuthor: 'visitor',
+    agentUnread: false,
   });
   return ref.id;
 }
@@ -65,8 +69,14 @@ export async function sendChatMessage(chatId: string, message: { author: 'visito
   await updateDoc(doc(db, 'liveChats', chatId), {
     lastMessageAt: serverTimestamp(),
     lastMessagePreview: message.body.slice(0, 120),
+    lastMessageAuthor: message.author,
     status: 'otvoreny',
+    agentUnread: message.author === 'visitor',
   });
+}
+
+export async function markChatRead(chatId: string) {
+  await updateDoc(doc(db, 'liveChats', chatId), { agentUnread: false });
 }
 
 export async function closeLiveChat(chatId: string) {

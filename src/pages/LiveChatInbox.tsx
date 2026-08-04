@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
-import { subscribeLiveChats, subscribeChatMessages, sendChatMessage, closeLiveChat, type LiveChat, type ChatMessage } from '../firebase/livechat';
+import { subscribeLiveChats, subscribeChatMessages, sendChatMessage, closeLiveChat, markChatRead, type LiveChat, type ChatMessage } from '../firebase/livechat';
 import { subscribeGeneralSettings, updateGeneralSettings, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -24,6 +24,11 @@ export function LiveChatInboxPage() {
   }, [selected]);
 
   const active = useMemo(() => chats.find((c) => c.id === selected) ?? null, [chats, selected]);
+
+  function openChat(chatId: string) {
+    setSelected(chatId);
+    markChatRead(chatId);
+  }
 
   async function toggleLiveChat() {
     await updateGeneralSettings({ ...settings, liveChatEnabled: !settings.liveChatEnabled });
@@ -75,7 +80,7 @@ export function LiveChatInboxPage() {
           {chats.map((c) => (
             <button
               key={c.id}
-              onClick={() => setSelected(c.id)}
+              onClick={() => openChat(c.id)}
               style={{
                 display: 'block',
                 width: '100%',
@@ -88,7 +93,12 @@ export function LiveChatInboxPage() {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 700, fontSize: 13 }}>{c.visitorName}</span>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 13 }}>
+                  {c.agentUnread && (
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--color-danger)', flexShrink: 0 }} />
+                  )}
+                  {c.visitorName}
+                </span>
                 {c.status === 'otvoreny' ? (
                   <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-success)' }}>● aktívny</span>
                 ) : (

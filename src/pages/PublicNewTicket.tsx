@@ -450,6 +450,12 @@ export function PublicNewTicketPage() {
         ))}
       </div>
 
+      {settings.supportFooterText && (
+        <div style={{ marginTop: 32, fontSize: 12, color: 'var(--color-text-faint)', textAlign: 'center' }}>
+          {settings.supportFooterText}
+        </div>
+      )}
+
       {settings.liveChatEnabled && <LiveChatWidget />}
     </div>
   );

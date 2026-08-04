@@ -5,6 +5,7 @@ import { Logo } from '../components/Logo';
 import { NotificationBell } from '../components/NotificationBell';
 import { subscribeAgents, type Agent } from '../firebase/agents';
 import { subscribeTickets } from '../firebase/tickets';
+import { subscribeLiveChats, type LiveChat } from '../firebase/livechat';
 import type { Ticket } from '../types';
 
 interface IconItem {
@@ -59,6 +60,7 @@ export function TopNav() {
   const tabs = isClient ? clientTabs : agentTabs;
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
+  const [chats, setChats] = useState<LiveChat[]>([]);
 
   useEffect(() => {
     if (isClient) return;
@@ -66,6 +68,13 @@ export function TopNav() {
   }, [isClient]);
 
   useEffect(() => subscribeTickets(setTickets), []);
+
+  useEffect(() => {
+    if (isClient) return;
+    return subscribeLiveChats(setChats);
+  }, [isClient]);
+
+  const hasUnreadChat = chats.some((c) => c.agentUnread);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -143,27 +152,37 @@ export function TopNav() {
         </div>
 
         <nav style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
-          {icons.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              style={({ isActive }) => ({
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 12px',
-                borderRadius: 'var(--radius-md)',
-                fontSize: 13,
-                fontWeight: 600,
-                color: isActive ? '#fff' : 'rgba(255,255,255,0.7)',
-                background: isActive ? 'rgba(255,255,255,0.14)' : 'transparent',
-              })}
-            >
-              <span>{item.icon}</span>
-              {item.label}
-            </NavLink>
-          ))}
+          {icons.map((item) => {
+            const isChatIcon = item.to === '/livechat';
+            const blinking = isChatIcon && hasUnreadChat;
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={blinking ? 'chat-icon-blink' : undefined}
+                style={({ isActive }) => ({
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: isActive ? '#fff' : 'rgba(255,255,255,0.7)',
+                  background: isActive ? 'rgba(255,255,255,0.14)' : 'transparent',
+                })}
+              >
+                <span>{item.icon}</span>
+                {item.label}
+                {blinking && (
+                  <span
+                    style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-danger)' }}
+                  />
+                )}
+              </NavLink>
+            );
+          })}
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

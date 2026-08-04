@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { subscribeGlobalActivity } from '../firebase/tickets';
+import { subscribeLiveChats, type LiveChat } from '../firebase/livechat';
+import { subscribeGeneralSettings, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
+import { useAuth } from '../contexts/AuthContext';
+import { playChatDing } from '../utils/chatSound';
 import type { ActivityEntry } from '../types';
+
+type FeedItem =
+  | { kind: 'activity'; id: string; text: string; actor: string; createdAt: ActivityEntry['createdAt']; ticketId: string }
+  | { kind: 'chat'; id: string; text: string; actor: string; createdAt: LiveChat['lastMessageAt'] };
 
 function fmt(ts: ActivityEntry['createdAt']) {
   if (!ts) return '';
@@ -9,15 +17,39 @@ function fmt(ts: ActivityEntry['createdAt']) {
 }
 
 export function NotificationBell() {
+  const { profile } = useAuth();
+  const isClient = profile?.role === 'klient';
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
+  const [chats, setChats] = useState<LiveChat[]>([]);
+  const [settings, setSettings] = useState<GeneralSettings>(DEFAULT_GENERAL_SETTINGS);
   const [open, setOpen] = useState(false);
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>(
     typeof Notification === 'undefined' ? 'unsupported' : Notification.permission,
   );
   const ref = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const prevUnreadIds = useRef<Set<string>>(new Set());
+  const firstRun = useRef(true);
 
   useEffect(() => subscribeGlobalActivity(setActivity, 10), []);
+  useEffect(() => subscribeGeneralSettings(setSettings), []);
+  useEffect(() => {
+    if (isClient) return;
+    return subscribeLiveChats(setChats);
+  }, [isClient]);
+
+  const unreadChats = chats.filter((c) => c.agentUnread);
+
+  useEffect(() => {
+    const currentIds = new Set(unreadChats.map((c) => c.id));
+    if (!firstRun.current) {
+      const hasNew = [...currentIds].some((id) => !prevUnreadIds.current.has(id));
+      if (hasNew && settings.chatSoundEnabled) playChatDing();
+    }
+    firstRun.current = false;
+    prevUnreadIds.current = currentIds;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chats]);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -32,6 +64,23 @@ export function NotificationBell() {
     const result = await Notification.requestPermission();
     setPermission(result);
   }
+
+  const feed: FeedItem[] = [
+    ...unreadChats.map(
+      (c): FeedItem => ({
+        kind: 'chat',
+        id: c.id,
+        text: `💬 Nová správa od ${c.visitorName}: ${c.lastMessagePreview || '…'}`,
+        actor: c.visitorName,
+        createdAt: c.lastMessageAt,
+      }),
+    ),
+    ...activity.map(
+      (a): FeedItem => ({ kind: 'activity', id: a.id, text: a.text, actor: a.actor, createdAt: a.createdAt, ticketId: a.ticketId }),
+    ),
+  ].sort((a, b) => (b.createdAt?.toMillis() ?? 0) - (a.createdAt?.toMillis() ?? 0));
+
+  const hasNotifications = feed.length > 0;
 
   return (
     <div ref={ref} style={{ position: 'relative' }}>
@@ -52,7 +101,7 @@ export function NotificationBell() {
         }}
       >
         🔔
-        {activity.length > 0 && (
+        {hasNotifications && (
           <span
             style={{
               position: 'absolute',
@@ -87,21 +136,21 @@ export function NotificationBell() {
             Posledná aktivita
           </div>
           <div style={{ maxHeight: 320, overflowY: 'auto' }}>
-            {activity.length === 0 && (
+            {feed.length === 0 && (
               <div style={{ padding: 16, fontSize: 12.5, color: 'var(--color-text-faint)' }}>Žiadna aktivita.</div>
             )}
-            {activity.map((a) => (
+            {feed.map((item) => (
               <div
-                key={a.id}
+                key={`${item.kind}-${item.id}`}
                 onClick={() => {
                   setOpen(false);
-                  navigate(`/tickets/${a.ticketId}`);
+                  navigate(item.kind === 'chat' ? '/livechat' : `/tickets/${item.ticketId}`);
                 }}
                 style={{ padding: '10px 14px', borderBottom: '1px solid var(--color-border)', cursor: 'pointer', fontSize: 12.5 }}
               >
-                <div>{a.text}</div>
+                <div>{item.text}</div>
                 <div style={{ color: 'var(--color-text-faint)', fontSize: 11 }}>
-                  {a.actor} · {fmt(a.createdAt)}
+                  {item.actor} · {fmt(item.createdAt)}
                 </div>
               </div>
             ))}

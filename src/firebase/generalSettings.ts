@@ -3,16 +3,21 @@ import { db } from './config';
 
 export interface GeneralSettings {
   liveChatEnabled: boolean;
+  chatSoundEnabled: boolean;
   supportWelcomeTitle: string;
   supportWelcomeSubtitle: string;
   supportHours: string;
+  supportFooterText: string;
 }
 
 export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   liveChatEnabled: false,
-  supportWelcomeTitle: 'Ako vám môžeme pomôcť?',
-  supportWelcomeSubtitle: 'Nahláste nový problém alebo si skontrolujte stav existujúcej požiadavky.',
+  chatSoundEnabled: true,
+  supportWelcomeTitle: 'Centrum podpory a správy požiadaviek',
+  supportWelcomeSubtitle:
+    'Nahlasujte technické problémy, zadávajte IT požiadavky a sledujte ich riešenie na jednom mieste.',
   supportHours: 'Po–Pi 8:00–16:00',
+  supportFooterText: 'Technický Service desk pre zamestnancov spoločnosti RONA',
 };
 
 const ref = doc(db, 'settings', 'general');
