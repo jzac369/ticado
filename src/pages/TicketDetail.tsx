@@ -15,7 +15,7 @@ import {
 import type { ActivityEntry, Attachment, Ticket, TicketMessage, TicketPriority, TicketStatus } from '../types';
 import { STATUS_LABELS, PRIORITY_LABELS, CHANNEL_LABELS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { PriorityBadge, StatusBadge } from '../components/Badges';
+import { PriorityBadge, StatusBadge, statusColors, priorityColors } from '../components/Badges';
 import { subscribeAgents, type Agent } from '../firebase/agents';
 import { uploadAttachments } from '../firebase/attachments';
 import { subscribeTemplates, type ReplyTemplate } from '../firebase/templates';
@@ -627,7 +627,11 @@ export function TicketDetailPage() {
                   style={inlineSelectStyle}
                 >
                   {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                    <option key={k} value={k}>
+                    <option
+                      key={k}
+                      value={k}
+                      style={{ color: statusColors[k as TicketStatus].fg, backgroundColor: statusColors[k as TicketStatus].bg }}
+                    >
                       {v}
                     </option>
                   ))}
@@ -645,7 +649,11 @@ export function TicketDetailPage() {
                   style={inlineSelectStyle}
                 >
                   {Object.entries(PRIORITY_LABELS).map(([k, v]) => (
-                    <option key={k} value={k}>
+                    <option
+                      key={k}
+                      value={k}
+                      style={{ color: priorityColors[k as TicketPriority].fg, backgroundColor: priorityColors[k as TicketPriority].bg }}
+                    >
                       {v}
                     </option>
                   ))}

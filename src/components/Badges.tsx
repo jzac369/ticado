@@ -1,14 +1,14 @@
 import type { TicketPriority, TicketStatus } from '../types';
 import { PRIORITY_LABELS, STATUS_LABELS } from '../types';
 
-const statusColors: Record<TicketStatus, { fg: string; bg: string }> = {
+export const statusColors: Record<TicketStatus, { fg: string; bg: string }> = {
   otvoreny: { fg: 'var(--color-info)', bg: 'var(--color-info-bg)' },
   v_rieseni: { fg: '#7c3aed', bg: 'rgba(124,58,237,0.1)' },
   caka_na_klienta: { fg: 'var(--color-warning)', bg: 'var(--color-warning-bg)' },
   uzavrety: { fg: 'var(--color-success)', bg: 'var(--color-success-bg)' },
 };
 
-const priorityColors: Record<TicketPriority, { fg: string; bg: string }> = {
+export const priorityColors: Record<TicketPriority, { fg: string; bg: string }> = {
   nizka: { fg: 'var(--color-text-muted)', bg: 'var(--color-surface-2)' },
   normalna: { fg: 'var(--color-info)', bg: 'var(--color-info-bg)' },
   vysoka: { fg: 'var(--color-warning)', bg: 'var(--color-warning-bg)' },

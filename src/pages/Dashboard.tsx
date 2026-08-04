@@ -4,7 +4,6 @@ import { subscribeGlobalActivity, subscribeRecentMessages, subscribeTickets } fr
 import { subscribeAgents, type Agent } from '../firebase/agents';
 import type { ActivityEntry, Ticket, TicketMessage, TicketPriority, TicketStatus } from '../types';
 import { CHANNEL_LABELS, PRIORITY_LABELS, STATUS_LABELS } from '../types';
-import { StatusBadge, PriorityBadge } from '../components/Badges';
 import { LineAreaChart } from '../components/charts/LineAreaChart';
 import { DonutChart } from '../components/charts/DonutChart';
 import { RankBarList } from '../components/charts/RankBarList';
@@ -13,6 +12,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { ClientTicketsPage } from './ClientTickets';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const PANEL_HEIGHT = 168;
 
 function dayKey(ms: number) {
   return new Date(ms).toLocaleDateString('sk-SK', { day: '2-digit', month: '2-digit' });
@@ -112,26 +112,12 @@ export function DashboardPage() {
     const assigned = open.filter((t) => t.assignedTo).length;
     const unassigned = open.length - assigned;
     const waiting = open.filter((t) => t.status === 'caka_na_klienta').length;
-    const createdInPeriod = filteredTickets.filter((t) => (t.createdAt?.toMillis() ?? 0) >= periodStartMs).length;
-    const createdInPrevPeriod = filteredTickets.filter((t) => {
-      const ms = t.createdAt?.toMillis() ?? 0;
-      return ms >= prevPeriodStartMs && ms < periodStartMs;
-    }).length;
     const resolvedInPeriod = filteredTickets.filter((t) => (t.closedAt?.toMillis() ?? 0) >= periodStartMs).length;
     const resolvedInPrevPeriod = filteredTickets.filter((t) => {
       const ms = t.closedAt?.toMillis() ?? 0;
       return ms >= prevPeriodStartMs && ms < periodStartMs;
     }).length;
-    return {
-      open: open.length,
-      assigned,
-      unassigned,
-      waiting,
-      createdInPeriod,
-      createdInPrevPeriod,
-      resolvedInPeriod,
-      resolvedInPrevPeriod,
-    };
+    return { open: open.length, assigned, unassigned, waiting, resolvedInPeriod, resolvedInPrevPeriod };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredTickets, days]);
 
@@ -214,7 +200,7 @@ export function DashboardPage() {
     open.forEach((t) => map.set(t.category || 'Iné', (map.get(t.category || 'Iné') ?? 0) + 1));
     return [...map.entries()]
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 7)
+      .slice(0, 5)
       .map(([label, value]) => ({ label, value }));
   }, [filteredTickets]);
 
@@ -223,9 +209,11 @@ export function DashboardPage() {
       const closed = filteredTickets.filter(
         (t) => t.priority === p && t.status === 'uzavrety' && t.closedAt && t.createdAt,
       );
-      if (closed.length === 0) return { label: PRIORITY_LABELS[p], value: 0, sublabel: '—' };
+      if (closed.length === 0) return { label: PRIORITY_LABELS[p], value: 0, displayValue: '—' };
       const avgMs = closed.reduce((sum, t) => sum + (t.closedAt!.toMillis() - t.createdAt!.toMillis()), 0) / closed.length;
-      return { label: PRIORITY_LABELS[p], value: Math.round(avgMs / 60000), sublabel: fmtDuration(avgMs) };
+      // value drives the bar's proportional width (minutes); displayValue is
+      // what's actually shown as the number, so nobody sees raw minute counts.
+      return { label: PRIORITY_LABELS[p], value: Math.round(avgMs / 60000), displayValue: fmtDuration(avgMs) };
     });
   }, [filteredTickets]);
 
@@ -245,7 +233,7 @@ export function DashboardPage() {
         return { name: a.name, openCount, closedCount: closedInPeriod.length, avgMs };
       })
       .sort((a, b) => b.closedCount - a.closedCount)
-      .slice(0, 8);
+      .slice(0, 5);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredTickets, agents, days]);
 
@@ -275,7 +263,7 @@ export function DashboardPage() {
       if (!last) return false;
       return last.authorEmail && t.requesterEmail && last.authorEmail.toLowerCase() === t.requesterEmail.toLowerCase();
     }).length;
-    const staleSince = Date.now() - 24 * DAY_MS / 24;
+    const staleSince = Date.now() - DAY_MS;
     const stale = open.filter((t) => (t.updatedAt?.toMillis() ?? t.createdAt?.toMillis() ?? 0) < staleSince).length;
     return { waitingOnUs, stale };
   }, [filteredTickets, messages]);
@@ -292,7 +280,7 @@ export function DashboardPage() {
           (t.assignedTo ?? '').toLowerCase().includes(q),
       );
     }
-    return list.slice(0, 8);
+    return list.slice(0, 6);
   }, [filteredTickets, search]);
 
   function exportCsv() {
@@ -332,35 +320,30 @@ export function DashboardPage() {
 
   return (
     <div>
-      <h1 style={{ fontSize: 19, margin: '0 0 2px' }}>Dashboard</h1>
-      <p style={{ margin: '0 0 10px', color: 'var(--color-text-muted)', fontSize: 12 }}>
-        Rýchly prehľad prevádzky technickej podpory.
-      </p>
-
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: 8,
           flexWrap: 'wrap',
-          marginBottom: 10,
-          padding: 8,
+          marginBottom: 8,
+          padding: 7,
           background: 'var(--color-surface)',
           border: '1px solid var(--color-border)',
           borderRadius: 'var(--radius-md)',
         }}
       >
-        <div style={{ position: 'relative', flex: '1 1 180px', minWidth: 160 }}>
+        <div style={{ position: 'relative', flex: '1 1 160px', minWidth: 140 }}>
           <Icon
             name="search"
-            size={13}
-            style={{ position: 'absolute', left: 9, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-faint)' }}
+            size={12}
+            style={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-faint)' }}
           />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Hľadať ticket, zákazníka alebo agenta…"
-            style={{ ...toolbarInputStyle, paddingLeft: 28, width: '100%' }}
+            placeholder="Hľadať ticket, zákazníka, agenta…"
+            style={{ ...toolbarInputStyle, paddingLeft: 26, width: '100%' }}
           />
         </div>
         <select value={agentFilter} onChange={(e) => setAgentFilter(e.target.value)} style={toolbarInputStyle}>
@@ -408,7 +391,7 @@ export function DashboardPage() {
           </button>
         )}
         <button onClick={exportCsv} style={{ ...toolbarBtnStyle, marginLeft: 'auto' }}>
-          <Icon name="download" size={13} /> Exportovať
+          <Icon name="download" size={12} /> Exportovať
         </button>
       </div>
 
@@ -427,20 +410,24 @@ export function DashboardPage() {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 0.85fr 0.85fr', gap: 8, marginBottom: 8 }}>
-        <Panel title="Vývoj ticketov" subtitle={`Posledných ${days} dní`}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 8 }}>
+        <Panel title="Vývoj ticketov" subtitle={`${days}d`}>
           <LineAreaChart
             categories={trend.map((b) => b.label)}
             series={[
               { key: 'created', label: 'Vytvorené', color: 'var(--chart-series-1)', values: trend.map((b) => b.created) },
               { key: 'resolved', label: 'Vyriešené', color: 'var(--chart-series-2)', values: trend.map((b) => b.resolved) },
             ]}
-            height={72}
+            height={62}
           />
         </Panel>
 
-        <Panel title="Otvorené podľa priority" subtitle="Aktuálny stav">
-          <DonutChart data={priorityDonut} size={56} />
+        <Panel title="Podľa priority" subtitle="Otvorené">
+          <DonutChart data={priorityDonut} size={46} />
+        </Panel>
+
+        <Panel title="Podľa stavu" subtitle="Všetky">
+          <DonutChart data={statusDonut} size={46} />
         </Panel>
 
         <Panel title="Priemerný čas riešenia" subtitle="Podľa priority">
@@ -448,61 +435,54 @@ export function DashboardPage() {
         </Panel>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-        <Panel title="Rozdelenie podľa stavu" subtitle="Všetky tickety">
-          <DonutChart data={statusDonut} size={56} />
-        </Panel>
-
-        <Panel title="Vek otvorených ticketov" subtitle="Aktuálny stav">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 8 }}>
+        <Panel title="Vek otvorených" subtitle="Aktuálny stav">
           <RankBarList items={ageBuckets} color="var(--chart-warning)" />
         </Panel>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-        <Panel title="Rozdelenie podľa kategórie" subtitle="Otvorené tickety">
+        <Panel title="Podľa kategórie" subtitle="Otvorené">
           <RankBarList items={categoryBreakdown} color="var(--chart-series-3)" />
         </Panel>
 
-        <Panel title="Kanály ticketov" subtitle={`Posledných ${days} dní`}>
-          <DonutChart data={channelDonut} size={56} />
+        <Panel title="Kanály ticketov" subtitle={`${days}d`}>
+          <DonutChart data={channelDonut} size={46} />
         </Panel>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-        <Panel title="Najviac otvorených" subtitle="Podľa zákazníka">
+        <Panel title="Najviac otvorených" subtitle="Zákazníci">
           <RankBarList items={topFirms} color="var(--chart-series-1)" />
         </Panel>
-
-        <Panel title="Výkon agentov" subtitle={`Uzavreté za ${days} dní`}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {agentPerformance.map((a) => (
-              <div key={a.name} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11.5 }}>
-                <div style={{ flex: 1, fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {a.name}
-                </div>
-                <div style={{ color: 'var(--color-text-faint)', width: 56, textAlign: 'right' }}>{a.openCount} otv.</div>
-                <div style={{ fontWeight: 700, width: 44, textAlign: 'right' }}>{a.closedCount} uzv.</div>
-                <div style={{ color: 'var(--color-text-faint)', width: 56, textAlign: 'right' }}>{fmtDuration(a.avgMs)}</div>
-              </div>
-            ))}
-            {agentPerformance.length === 0 && <div style={{ fontSize: 11.5, color: 'var(--color-text-faint)' }}>Žiadni technici.</div>}
-          </div>
-        </Panel>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-        <Panel title="Tickety vyžadujúce akciu" subtitle="Aktuálny stav">
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+        <Panel title="Výkon agentov" subtitle={`Uzavreté ${days}d`}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, height: '100%', overflowY: 'auto' }}>
+            {agentPerformance.map((a) => (
+              <div key={a.name} style={{ fontSize: 11 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 600 }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</span>
+                  <span>{a.closedCount}</span>
+                </div>
+                <div style={{ color: 'var(--color-text-faint)', fontSize: 10 }}>
+                  {a.openCount} otvorené · {fmtDuration(a.avgMs)}
+                </div>
+              </div>
+            ))}
+            {agentPerformance.length === 0 && <div style={{ fontSize: 11, color: 'var(--color-text-faint)' }}>Žiadni technici.</div>}
+          </div>
+        </Panel>
+
+        <Panel title="Vyžaduje akciu" subtitle="Aktuálny stav">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <ActionRow
               icon="message"
-              label="Čakajúce na vašu odpoveď"
+              label="Čaká na vašu odpoveď"
               value={actionItems.waitingOnUs}
               tone="warning"
               onClick={() => navigate('/tickets')}
             />
             <ActionRow
               icon="clock"
-              label="Bez aktivity dlhšie ako 24h"
+              label="Bez aktivity 24h+"
               value={actionItems.stale}
               tone="danger"
               onClick={() => navigate('/tickets')}
@@ -510,12 +490,12 @@ export function DashboardPage() {
           </div>
         </Panel>
 
-        <Panel title="Posledná aktivita" subtitle="Naprieč všetkými ticketmi">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 100, overflowY: 'auto' }}>
-            {activity.map((a) => (
-              <div key={a.id} style={{ fontSize: 11 }}>
-                <div>{a.text}</div>
-                <div style={{ color: 'var(--color-text-faint)', fontSize: 10 }}>
+        <Panel title="Posledná aktivita" subtitle="Všetky tickety">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, height: '100%', overflowY: 'auto' }}>
+            {activity.slice(0, 5).map((a) => (
+              <div key={a.id} style={{ fontSize: 10.5 }}>
+                <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.text}</div>
+                <div style={{ color: 'var(--color-text-faint)', fontSize: 9.5 }}>
                   {a.actor} · {fmtActivity(a.createdAt)}
                 </div>
               </div>
@@ -523,55 +503,32 @@ export function DashboardPage() {
             {activity.length === 0 && <div style={{ fontSize: 11, color: 'var(--color-text-faint)' }}>Žiadna aktivita.</div>}
           </div>
         </Panel>
-      </div>
 
-      <Panel title="Najnovšie tickety" subtitle={search.trim() ? `Výsledky pre "${search.trim()}"` : 'Posledných 8'}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
-          <thead>
-            <tr style={{ textAlign: 'left' }}>
-              {['Ticket', 'Predmet', 'Zákazník', 'Vek', 'Stav', 'Priorita', ''].map((h) => (
-                <th key={h} style={{ padding: '4px 8px', fontSize: 10, fontWeight: 700, color: 'var(--color-text-faint)' }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
+        <Panel title="Najnovšie tickety" subtitle={search.trim() ? 'Filtrované' : `Posledných ${recentFiltered.length}`}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, height: '100%', overflowY: 'auto' }}>
             {recentFiltered.map((t) => (
-              <tr
+              <div
                 key={t.id}
                 onClick={() => navigate(`/tickets/${t.id}`)}
-                style={{ borderTop: '1px solid var(--color-border)', cursor: 'pointer' }}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', fontSize: 10.5 }}
               >
-                <td style={{ padding: '6px 8px', fontWeight: 700, color: 'var(--color-primary)' }}>{t.code}</td>
-                <td style={{ padding: '6px 8px' }}>{t.subject}</td>
-                <td style={{ padding: '6px 8px', color: 'var(--color-text-muted)' }}>{t.customerName}</td>
-                <td style={{ padding: '6px 8px', color: 'var(--color-text-faint)' }}>{ageLabel(t.createdAt)}</td>
-                <td style={{ padding: '6px 8px' }}>
-                  <StatusBadge status={t.status} />
-                </td>
-                <td style={{ padding: '6px 8px' }}>
-                  <PriorityBadge priority={t.priority} />
-                </td>
-                <td style={{ padding: '6px 8px', color: 'var(--color-primary)', textAlign: 'center' }}>›</td>
-              </tr>
+                <div style={{ overflow: 'hidden' }}>
+                  <div style={{ fontWeight: 700, color: 'var(--color-primary)' }}>{t.code}</div>
+                  <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 110 }}>{t.subject}</div>
+                </div>
+                <div style={{ color: 'var(--color-text-faint)', fontSize: 9.5 }}>{ageLabel(t.createdAt)}</div>
+              </div>
             ))}
-            {recentFiltered.length === 0 && (
-              <tr>
-                <td colSpan={7} style={{ padding: 16, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                  Žiadne výsledky.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-        <button
-          onClick={() => navigate('/tickets')}
-          style={{ marginTop: 6, background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: 11, padding: 0, cursor: 'pointer' }}
-        >
-          Zobraziť všetky →
-        </button>
-      </Panel>
+            {recentFiltered.length === 0 && <div style={{ fontSize: 11, color: 'var(--color-text-faint)' }}>Žiadne výsledky.</div>}
+          </div>
+          <button
+            onClick={() => navigate('/tickets')}
+            style={{ marginTop: 4, background: 'none', border: 'none', color: 'var(--color-primary)', fontWeight: 600, fontSize: 10.5, padding: 0, cursor: 'pointer' }}
+          >
+            Zobraziť všetky →
+          </button>
+        </Panel>
+      </div>
     </div>
   );
 }
@@ -619,18 +576,18 @@ function Card({
         border: '1px solid var(--color-border)',
         borderLeft: `3px solid var(--color-${tone})`,
         borderRadius: 'var(--radius-md)',
-        padding: '8px 10px',
+        padding: '7px 9px',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 3 }}>
         <div>
-          <div style={{ fontSize: 10, color: 'var(--color-text-muted)', fontWeight: 600, marginBottom: 2 }}>{label}</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: `var(--color-${tone})` }}>{value}</div>
+          <div style={{ fontSize: 9.5, color: 'var(--color-text-muted)', fontWeight: 600, marginBottom: 2 }}>{label}</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: `var(--color-${tone})` }}>{value}</div>
         </div>
         <div
           style={{
-            width: 22,
-            height: 22,
+            width: 20,
+            height: 20,
             borderRadius: '50%',
             background: `var(--color-${tone})`,
             color: '#fff',
@@ -640,22 +597,22 @@ function Card({
             flexShrink: 0,
           }}
         >
-          <Icon name={icon} size={12} />
+          <Icon name={icon} size={11} />
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 18 }}>
         {delta ? (
           <div
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: 3,
-              fontSize: 10,
+              fontSize: 9.5,
               fontWeight: 700,
               color: delta.diff >= 0 ? 'var(--color-success)' : 'var(--color-danger)',
             }}
           >
-            <Icon name={delta.diff >= 0 ? 'trendUp' : 'trendDown'} size={10} />
+            <Icon name={delta.diff >= 0 ? 'trendUp' : 'trendDown'} size={9} />
             {delta.diff >= 0 ? '+' : ''}
             {delta.diff} ({delta.pct >= 0 ? '+' : ''}
             {delta.pct}%)
@@ -688,8 +645,8 @@ function ActionRow({
       style={{
         display: 'flex',
         alignItems: 'center',
-        gap: 8,
-        padding: '7px 8px',
+        gap: 7,
+        padding: '6px 7px',
         border: '1px solid var(--color-border)',
         borderRadius: 'var(--radius-sm)',
         background: 'var(--color-surface-2)',
@@ -697,9 +654,9 @@ function ActionRow({
         textAlign: 'left',
       }}
     >
-      <Icon name={icon} size={13} style={{ color: `var(--color-${tone})` }} />
-      <span style={{ flex: 1, fontSize: 11.5, fontWeight: 600 }}>{label}</span>
-      <span style={{ fontSize: 12.5, fontWeight: 700, color: `var(--color-${tone})` }}>{value}</span>
+      <Icon name={icon} size={12} style={{ color: `var(--color-${tone})` }} />
+      <span style={{ flex: 1, fontSize: 10.5, fontWeight: 600 }}>{label}</span>
+      <span style={{ fontSize: 12, fontWeight: 700, color: `var(--color-${tone})` }}>{value}</span>
     </button>
   );
 }
@@ -712,34 +669,38 @@ function Panel({ title, subtitle, children }: { title: string; subtitle: string;
         border: '1px solid var(--color-border)',
         borderRadius: 'var(--radius-md)',
         padding: 9,
+        height: PANEL_HEIGHT,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
       }}
     >
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5 }}>
-        <div style={{ fontWeight: 700, fontSize: 11.5 }}>{title}</div>
-        <div style={{ fontSize: 10, color: 'var(--color-text-faint)' }}>{subtitle}</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 5, flexShrink: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: 11 }}>{title}</div>
+        <div style={{ fontSize: 9.5, color: 'var(--color-text-faint)' }}>{subtitle}</div>
       </div>
-      {children}
+      <div style={{ flex: 1, minHeight: 0 }}>{children}</div>
     </div>
   );
 }
 
 const toolbarInputStyle: CSSProperties = {
-  padding: '7px 10px',
+  padding: '6px 9px',
   border: '1px solid var(--color-border)',
   borderRadius: 'var(--radius-sm)',
   background: 'var(--color-surface)',
-  fontSize: 11.5,
+  fontSize: 11,
 };
 
 const toolbarBtnStyle: CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   gap: 6,
-  padding: '7px 12px',
+  padding: '6px 11px',
   border: '1px solid var(--color-border)',
   borderRadius: 'var(--radius-sm)',
   background: 'var(--color-surface)',
-  fontSize: 11.5,
+  fontSize: 11,
   fontWeight: 600,
   cursor: 'pointer',
   whiteSpace: 'nowrap',

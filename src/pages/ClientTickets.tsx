@@ -76,6 +76,7 @@ export function ClientTicketsPage({ customerId, customerName }: { customerId: st
                   borderTop: '1px solid var(--color-border)',
                   cursor: 'pointer',
                   borderLeft: t.priority === 'kriticka' ? '3px solid var(--color-danger)' : '3px solid transparent',
+                  background: t.priority === 'kriticka' ? 'rgba(220,38,38,0.05)' : undefined,
                 }}
               >
                 <td style={{ padding: '12px 14px', fontWeight: 700, color: 'var(--color-primary)' }}>{t.code}</td>

@@ -7,11 +7,12 @@ import { subscribeAgents, type Agent } from '../firebase/agents';
 import { subscribeTickets } from '../firebase/tickets';
 import { subscribeLiveChats, type LiveChat } from '../firebase/livechat';
 import { AlertTicker } from '../components/AlertTicker';
+import { Icon, type IconName } from '../components/Icon';
 import type { Ticket } from '../types';
 
 interface IconItem {
   label: string;
-  icon: string;
+  icon: IconName;
   to: string;
   end?: boolean;
 }
@@ -24,17 +25,17 @@ interface TabItem {
 }
 
 const agentIcons: IconItem[] = [
-  { label: 'Tickety', icon: '🎫', to: '/tickets' },
-  { label: 'Zákazníci', icon: '📇', to: '/customers' },
-  { label: 'Live chat', icon: '💬', to: '/livechat' },
-  { label: 'Reporty', icon: '📊', to: '/analytics' },
-  { label: 'Nastavenia', icon: '⚙️', to: '/settings-hub' },
-  { label: 'Pomoc', icon: '📖', to: '/legend' },
+  { label: 'Tickety', icon: 'ticket', to: '/tickets' },
+  { label: 'Zákazníci', icon: 'users', to: '/customers' },
+  { label: 'Live chat', icon: 'message', to: '/livechat' },
+  { label: 'Reporty', icon: 'barChart', to: '/analytics' },
+  { label: 'Nastavenia', icon: 'settings', to: '/settings-hub' },
+  { label: 'Pomoc', icon: 'book', to: '/legend' },
 ];
 
 const clientIcons: IconItem[] = [
-  { label: 'Tickety', icon: '🎫', to: '/', end: true },
-  { label: 'Pomoc', icon: '📖', to: '/legend' },
+  { label: 'Tickety', icon: 'ticket', to: '/', end: true },
+  { label: 'Pomoc', icon: 'book', to: '/legend' },
 ];
 
 const agentTabs: TabItem[] = [
@@ -177,7 +178,7 @@ export function TopNav() {
                   background: isActive ? 'rgba(255,255,255,0.14)' : 'transparent',
                 })}
               >
-                <span>{item.icon}</span>
+                <Icon name={item.icon} size={14} />
                 {item.label}
                 {blinking && (
                   <span
