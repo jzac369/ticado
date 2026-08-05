@@ -12,35 +12,52 @@ interface Group {
 
 const GROUPS: Group[] = [
   {
-    title: 'Dashboard',
+    title: 'Prihlásenie a základné rozloženie',
     entries: [
       {
-        title: 'Štatistické dlaždice',
-        body: 'Nevyriešené = otvorené tikety (všetky stavy okrem Uzavretý). Priradené/Nepriradené = či má tiket vyplneného technika. Čakajúce na klienta = tikety v stave "Čaká na klienta". Vyriešené za 30 dní = tikety uzavreté v poslednom mesiaci.',
+        title: 'Prihlásenie',
+        body: 'Email a heslo pridelené agentovi. Voliteľné "Zapamätať heslo na tomto zariadení". Dole je odkaz "Nahlásiť problém bez prihlásenia" na verejnú stránku /support pre návštevníkov bez účtu.',
       },
       {
-        title: 'Vývoj tiketov (graf)',
-        body: 'Čiarový graf posledných 14 dní: koľko tiketov bolo v daný deň vytvorených (modrá) a koľko vyriešených/uzavretých (oranžová).',
+        title: 'Horná lišta',
+        body: 'Prvý riadok: ikony Tikety / Zákazníci / Live chat / Reporty / Nastavenia / Pomoc, zvonček s notifikáciami a meno používateľa s menu (Môj profil, Odhlásiť sa). Druhý riadok: záložky Dashboard / Moje tikety / Všetky tikety / Nepriradené / Dnešné / Archivované, každá s počtom v reálnom čase, rotujúci banner s upozorneniami a tlačidlo "+ Nový tiket".',
       },
       {
-        title: 'Otvorené podľa priority',
-        body: 'Donut graf rozdelenia aktuálne otvorených tiketov podľa priority (Nízka/Normálna/Vysoká/Kritická).',
+        title: 'Príkazový panel (Ctrl+K)',
+        body: 'Odkiaľkoľvek v appke otvorí rýchle vyhľadávanie tiketov a skratky na hlavné stránky, bez nutnosti klikať cez menu.',
       },
-      { title: 'Najviac otvorených', body: 'Rebríček zákazníkov s najväčším počtom aktuálne otvorených tiketov.' },
       {
-        title: 'Odpracované hodiny agentov',
-        body: 'Súčet hodín, ktoré agenti zaznamenali pri odpovediach (pole "hodiny" pri komunikácii) za posledných 7 dní.',
+        title: 'Zvonček s notifikáciami',
+        body: 'Zoznam posledných udalostí (nové tikety, nové live chat správy a pod.) s odkazom priamo na daný záznam.',
       },
-      { title: 'Posledná aktivita', body: 'Posledné zmeny naprieč všetkými tiketmi (zmena stavu, priradenia, nová odpoveď).' },
     ],
   },
   {
-    title: 'Rotujúci banner v hornej lište',
+    title: 'Dashboard',
     entries: [
       {
-        title: 'Čo zobrazuje',
-        body: 'Farebný box v riadku so záložkami (Dashboard, Moje tikety, ...), zarovnaný k pravému okraju pred tlačidlom "+ Nový tiket". Cyklicky strieda až 5 upozornení: počet nepriradených tiketov, kritické otvorené tikety, tikety čakajúce na klienta, dnes vytvorené/vyriešené tikety, a tikety bez aktivity 24+ hodín. Kliknutím sa presuniete na zoznam tiketov.',
+        title: 'Panel filtrov',
+        body: 'Hľadanie podľa tiketu/zákazníka/agenta, filter podľa agenta/priority/stavu, výber obdobia (7/14/30 dní) a tlačidlo "Exportovať" (CSV aktuálne vyfiltrovaných tiketov).',
       },
+      {
+        title: 'Štatistické dlaždice',
+        body: 'Nevyriešené = otvorené tikety (všetky stavy okrem Uzavretý). Priradené/Nepriradené = či majú technika. Čakajúce na klienta = stav "Čaká na klienta". Vyriešené (Xd) = uzavreté v zvolenom období, s percentuálnou zmenou oproti rovnako dlhému predchádzajúcemu obdobiu. Mini grafy trendu majú len Nevyriešené a Vyriešené — pri ostatných dlaždiciach systém neuchováva históriu zmien v čase, takže trend by bol len odhad, nie skutočné dáta.',
+      },
+      {
+        title: 'Vývoj tiketov',
+        body: 'Čiarový graf: koľko tiketov bolo v daný deň vytvorených a koľko vyriešených, za zvolené obdobie.',
+      },
+      { title: 'Podľa priority / Podľa stavu / Kanály tiketov', body: 'Donut grafy rozdelenia tiketov podľa priority, stavu a kanála (web/email/telefón).' },
+      { title: 'Priemerný čas riešenia', body: 'Priemerná doba od vytvorenia po uzavretie, osobitne za každú prioritu.' },
+      { title: 'Vek otvorených', body: 'Koľko aktuálne otvorených tiketov je staré 0-1 deň, 1-3 dni, 3-7 dní a 7+ dní.' },
+      { title: 'Podľa kategórie', body: 'Rebríček najčastejších kategórií medzi otvorenými tiketmi.' },
+      { title: 'Najviac otvorených', body: 'Rebríček zákazníkov (firiem) s najväčším počtom aktuálne otvorených tiketov.' },
+      { title: 'Výkon agentov', body: 'Za zvolené obdobie: počet uzavretých a otvorených tiketov na technika a jeho priemerný čas riešenia.' },
+      {
+        title: 'Vyžaduje akciu',
+        body: '"Čaká na vašu odpoveď" = posledná správa v tikete je od klienta. "Bez aktivity 24h+" = tiket sa 24 a viac hodín vôbec nehol.',
+      },
+      { title: 'Posledná aktivita / Najnovšie tikety', body: 'Posledné zmeny naprieč všetkými tiketmi, resp. posledné vytvorené tikety (rešpektuje políčko hľadania hore).' },
     ],
   },
   {
@@ -55,7 +72,7 @@ const GROUPS: Group[] = [
       { title: 'Archivované tikety', body: 'Tikety odložené tlačidlom "Archivovať" v detaile tiketu. Nezobrazujú sa v žiadnom inom zozname ani v Dashboard štatistikách, kým sa neobnovia.' },
       {
         title: 'Vyhľadávanie (Všetky tikety)',
-        body: 'Hľadá v čísle tiketu, predmete, mene zákazníka aj v obsahu komunikácie. Viac slov oddelených medzerou = musia sedieť všetky (nie ľubovoľné). Presnú frázu zadajte v úvodzovkách, napr. "Backup Configuration". Rovnaké vyhľadávanie je dostupné odkiaľkoľvek klávesovou skratkou Ctrl+K.',
+        body: 'Hľadá v čísle tiketu, predmete, mene firmy aj v obsahu komunikácie. Viac slov oddelených medzerou = musia sedieť všetky (nie ľubovoľné). Presnú frázu zadajte v úvodzovkách, napr. "Backup Configuration". Rovnaké vyhľadávanie je dostupné odkiaľkoľvek klávesovou skratkou Ctrl+K.',
       },
       { title: 'Filtre (Všetky tikety)', body: 'Stav, priorita a rozsah dátumu vytvorenia. Tlačidlo "Reset" vráti všetky filtre na východiskový stav.' },
       {
@@ -64,8 +81,8 @@ const GROUPS: Group[] = [
       },
       { title: 'Zoradenie a stránkovanie', body: 'Najnovšie/Najstaršie podľa dátumu vytvorenia; počet záznamov na stránku si viete zmeniť.' },
       {
-        title: 'Červený pruh pri riadku',
-        body: 'Tenký zvislý pruh pred číslom tiketu znamená, že tiket má kritickú prioritu.',
+        title: 'Zvýraznenie kritických tiketov',
+        body: 'Riadok tiketu s kritickou prioritou má tenký červený pruh pred číslom tiketu a jemne podfarbené celé pozadie riadku — aby bol na prvý pohľad odlíšiteľný od ostatných.',
       },
       { title: 'Stĺpec Pridelené', body: 'Meno technika, ktorému je tiket aktuálne priradený, alebo "Bez priradenia".' },
       { title: 'Export CSV', body: 'Tlačidlo "Exportovať CSV" stiahne aktuálne vyfiltrovaný zoznam tiketov ako tabuľku pre Excel.' },
@@ -79,9 +96,12 @@ const GROUPS: Group[] = [
         title: 'Prílohy',
         body: 'Súbory/screenshoty sa dajú pridať pretiahnutím do rámčeka, tlačidlom "Vybrať súbory", alebo vložením obrázka zo schránky (Ctrl+V) priamo do textu odpovede. Vyžaduje zapnutý Firebase Storage.',
       },
-      { title: 'Šablóny odpovedí', body: 'Tlačidlo nad odpoveďou vloží preddefinovaný text (spravuje sa v Nastavenia → Šablóny).' },
+      { title: 'Šablóny odpovedí', body: 'Tlačidlo nad odpoveďou vloží preddefinovaný text (spravuje sa v Nastavenia → Obsah podpory → Šablóny odpovedí).' },
       { title: 'Privátna poznámka', body: 'Zaškrtávacie políčko pri odosielaní správy — takto napísaný text klient v komunikácii nevidí.' },
-      { title: 'Stav tiketu', body: 'Otvorený → V riešení → Čaká na klienta → Uzavretý. Zmena stavu sa zaznamená do Poslednej aktivity.' },
+      {
+        title: 'Stav a priorita tiketu',
+        body: 'Rozbaľovacie menu priamo v detaile — Otvorený → V riešení → Čaká na klienta → Uzavretý, resp. Nízka/Normálna/Vysoká/Kritická. Každá položka v menu je farebne odlíšená rovnako ako v zoznamoch (napr. kritická = červená). Zmena sa hneď zaznamená do Poslednej aktivity.',
+      },
       { title: 'Priradenie', body: 'Výber technika zo zoznamu (spravovaného v Nastavenia → IT technici), ktorý má tiket na starosti.' },
       { title: 'Štítky', body: 'Ľubovoľné krátke značky pridané k tiketu (napr. "hardvér", "urgent") pre jemnejšie triedenie nad rámec kategórie.' },
       { title: 'Žiadateľ', body: 'Meno, firma, oddelenie (ak vyplnené) a email osoby, ktorá tiket nahlásila.' },
@@ -95,21 +115,45 @@ const GROUPS: Group[] = [
   {
     title: 'Nový tiket (interný)',
     entries: [
-      { title: 'Zákazník', body: 'Vyberte existujúceho, alebo rovno napíšte názov novej firmy — vytvorí sa automaticky.' },
-      { title: 'Priorita', body: 'Nízka/Normálna/Vysoká/Kritická — ovplyvňuje farebné zvýraznenie v zoznamoch a grafoch, kritická pridáva červený pruh v zozname.' },
-      { title: 'Automatické priradenie', body: 'Nový tiket sa systém pokúsi rovnomerne (round-robin) priradiť aktívnemu IT technikovi, ak nejakí existujú v Nastaveniach.' },
+      { title: 'Firma', body: 'Výber z existujúceho zoznamu zákazníckych firiem (nové firmy sa dnes zakladajú v Nastavenia → Zákazníci, nie priamo z formulára).' },
+      { title: 'Meno žiadateľa', body: 'Vypĺňa sa ručne, nič sa vopred nedopĺňa — aby nedošlo k omylu, keď agent zakladá tiket v mene niekoho iného.' },
+      { title: 'Priorita', body: 'Nízka/Normálna/Vysoká/Kritická — ovplyvňuje farebné zvýraznenie v zoznamoch a grafoch, kritická pridáva červené zvýraznenie riadku v zozname.' },
+      {
+        title: 'Automatické priradenie',
+        body: 'Podľa toho, čo je zvolené v Nastavenia → Prideľovanie tiketov: manuálne (ostane nepridelený), postupne dokola, náhodne, alebo tomu, kto má aktuálne najmenej otvorených tiketov.',
+      },
     ],
   },
   {
     title: 'Podporná stránka /support (bez prihlásenia)',
     entries: [
       {
-        title: 'Kto ju vidí',
-        body: 'Stránka /support je verejne dostupná bez prihlásenia — odkaz je aj na prihlasovacej obrazovke ("Nahlásiť problém bez prihlásenia"). Úvodná obrazovka ponúka dve možnosti: nahlásiť nový problém alebo skontrolovať stav existujúcej požiadavky.',
+        title: 'Hlavička a banner',
+        body: 'Logo a názov firmy, pod ním prípadný banner s dôležitým oznámením (spravovaný v Nastavenia → Podporná stránka → Banner).',
+      },
+      {
+        title: 'Úvodná časť',
+        body: 'Uvítací nadpis/podnadpis (upraviteľné v Nastavenia → Podporná stránka) a tri tlačidlá: Nahlásiť problém, Skontrolovať stav požiadavky, Znalostná báza.',
+      },
+      {
+        title: 'Kategórie problémov',
+        body: 'Šesť dlaždíc (IT problém, Prístup/heslo, Hardvér, Softvér, Nová požiadavka, Iné) — slúžia len ako vizuálny prehľad typov požiadaviek, kliknutím sa nič nespustí.',
+      },
+      {
+        title: 'Info pruh',
+        body: 'Prevádzkové hodiny s farebnou bodkou (zelená = "Sme tu pre vás" počas nastavených hodín, sivá = mimo nich), telefón na urgentné prípady (ak je vyplnený v Nastaveniach) a odkaz na Najčastejšie riešené témy.',
+      },
+      {
+        title: 'Ako to funguje',
+        body: 'Tri kroky vysvetľujúce postup: Nahlásenie → Spracovanie → Riešenie.',
+      },
+      {
+        title: 'Znalostná báza',
+        body: 'Najviac 3 obľúbené články priamo na úvode, celý zoznam po kliknutí na "Znalostná báza". Obsah sa spravuje v Nastavenia → Obsah podpory → Znalostná báza — každý článok má názov, kategóriu a voliteľný odkaz.',
       },
       {
         title: 'Nahlásiť problém — obmedzenia',
-        body: 'Firma sa vyberá len z existujúceho zoznamu (nedá sa vymyslieť nová), a nedá sa vybrať konkrétny technik — o priradení rozhoduje až interný tím.',
+        body: 'Firma sa vyberá len z existujúceho zoznamu, a nedá sa vybrať konkrétny technik — o priradení rozhoduje interný tím (alebo automatika podľa Nastavenia → Prideľovanie tiketov).',
       },
       { title: 'Prílohy', body: 'Rovnaké možnosti ako v detaile tiketu — drag&drop, výber súboru, alebo vloženie screenshotu (Ctrl+V) do popisu.' },
       { title: 'Po odoslaní', body: 'Zobrazí sa číslo tiketu a tlačidlo "Nahlásiť ďalší problém" na okamžité zadanie ďalšej požiadavky.' },
@@ -118,17 +162,27 @@ const GROUPS: Group[] = [
         body: 'Vyžaduje číslo tiketu AJ emailovú adresu použitú pri nahlásení — obe sa musia zhodovať, inak sa tiket nezobrazí. Zobrazí stav, prioritu a či sa mu už venuje technik.',
       },
       {
-        title: 'Doplňujúca správa',
-        body: 'Po úspešnom overení môže klient poslať doplňujúcu otázku. Ak má tiket priradeného technika, správa sa zapíše priamo do komunikácie tiketu. Ak tiket ešte čaká vo fronte, správa sa zapíše len do Poslednej aktivity tiketu.',
+        title: 'Doplňujúca správa a zrušenie tiketu',
+        body: 'Po overení emailu môže klient poslať doplňujúcu otázku (zapíše sa do komunikácie alebo aktivity, podľa toho, či má tiket technika) alebo tiket sám zrušiť — stav sa zmení na Uzavretý.',
+      },
+    ],
+  },
+  {
+    title: 'Live chat',
+    entries: [
+      {
+        title: 'Tlačidlo "Live Chat" na /support',
+        body: 'Ak je live chat zapnutý (Nastavenia → Podporná stránka → Všeobecné), vpravo dole na podpornej stránke sa zobrazí plávajúce tlačidlo "Live Chat". Návštevník zadá meno, email a nepovinne číslo tiketu, ktorého sa chat týka, potom môže písať priamo s podporou.',
       },
       {
-        title: 'Zrušiť tiket',
-        body: 'Po overení emailu môže klient tiket sám zrušiť — stav sa zmení na Uzavretý a do Poslednej aktivity pribudne záznam "Uzavretý používateľom" s časovou stopou. Dá sa použiť len na ešte neuzavreté tikety.',
+        title: 'Inbox pre agentov (/livechat)',
+        body: 'Zoznam všetkých konverzácií. Ak návštevník uviedol číslo tiketu, vedľa chatu sa zobrazí aj samotný tiket s jeho aktivitou — pre rýchlejšiu prácu bez prepínania obrazoviek.',
       },
       {
-        title: 'Live chat',
-        body: 'Ak je zapnutý v Nastavenia → Live chat, na stránke sa zobrazí plávajúce tlačidlo 💬. Návštevník zadá meno, email a nepovinne číslo tiketu, ktorého sa chat týka.',
+        title: 'Notifikácie',
+        body: 'Nová správa od návštevníka rozbliká ikonu Live chat v hornej lište a pridá záznam do zvončeka notifikácií, spolu s jemným zvukovým tónom (dá sa vypnúť v Nastavenia → Podporná stránka → Všeobecné). Otvorením konverzácie v Live chate sa upozornenie stíši.',
       },
+      { title: 'Ukončenie chatu', body: 'Návštevník aj agent môžu konverzáciu kedykoľvek ukončiť tlačidlom "Ukončiť chat" — po ukončení sa dá začať už len nová konverzácia.' },
     ],
   },
   {
@@ -146,18 +200,18 @@ const GROUPS: Group[] = [
         title: 'IT technici',
         body: 'Meno, priezvisko, pozícia, email a ďalšie kontaktné údaje technikov, ktorí sa dajú priraďovať k tiketom. Upravovať a mazať iných technikov môže len master agent — ostatní vidia zoznam len na čítanie a upravujú si len svoj vlastný záznam cez Môj profil.',
       },
-      { title: 'Šablóny odpovedí', body: 'Preddefinované texty na rýchle vkladanie do odpovedí (napr. "Prosíme o reštart zariadenia...").' },
+      { title: 'Zákazníci', body: 'Rovnaká stránka ako Zákazníci v hornej lište — správa firiem a ich kolegov.' },
       {
-        title: 'Live chat',
-        body: 'Zoznam konverzácií z podporného widgetu na /support, s prepínačom na zapnutie/vypnutie chatu pre klientov. Ak návštevník uviedol číslo tiketu, vedľa chatu sa zobrazí aj samotný tiket s jeho záznamom aktivity — pre rýchlejšiu prácu bez prepínania obrazoviek.',
+        title: 'Obsah podpory',
+        body: 'Dve záložky: "Šablóny odpovedí" (preddefinované texty do komunikácie) a "Znalostná báza" (články zobrazené v sekcii Najčastejšie riešené témy na /support, dajú sa pridávať, upravovať, mazať a preusporadúvať šípkami).',
       },
       {
-        title: 'Notifikácie live chatu',
-        body: 'Nová správa od návštevníka rozbliká ikonu 💬 Live chat v hornej lište a pridá záznam do zvončeka notifikácií, spolu s jemným zvukovým tónom (dá sa vypnúť vo Všeobecných nastaveniach). Otvorením konverzácie v Live chate sa upozornenie stíši.',
+        title: 'Podporná stránka',
+        body: 'Dve záložky: "Všeobecné" (uvítacie texty, prevádzkové hodiny — textový popis aj presný čas/dni pre živý indikátor, telefón na urgentné prípady, text v päte, vypínače live chatu a zvukových upozornení) a "Banner" (oznámenie o odstávke alebo inej dôležitej správe, zobrazené aj klientom po prihlásení aj na /support).',
       },
       {
-        title: 'Všeobecné nastavenia',
-        body: 'Uvítací nadpis/podnadpis a text v päte podpornej stránky /support, prevádzkové hodiny podpory, a vypínače pre live chat a jeho zvukové upozornenie.',
+        title: 'Prideľovanie tiketov',
+        body: 'Určuje, ako sa vyberá technik pre tiket, ktorý zakladá agent za niekoho iného: manuálne, automaticky postupne (round-robin), automaticky náhodne, alebo automaticky tomu s najnižším počtom aktuálne otvorených tiketov. Tikety z /support a tikety, ktoré si klient založí sám, ostávajú vždy nepridelené.',
       },
     ],
   },
@@ -170,7 +224,7 @@ const GROUPS: Group[] = [
       },
       {
         title: 'Rola Klient vs Agent',
-        body: 'Kolegovia (klientske účty) vidia len tikety svojej vlastnej firmy. Interní agenti/technici (účty vytvorené priamo vo Firebase Console) vidia všetko.',
+        body: 'Kolegovia (klientske účty) vidia len tikety svojej vlastnej firmy. Interní agenti/technici (účty vytvorené priamo vo Firebase Console a zapísané do zoznamu povolených agentov) vidia všetko.',
       },
       {
         title: 'Prehliadačové notifikácie',
