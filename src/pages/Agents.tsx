@@ -53,7 +53,7 @@ export function AgentsPage() {
   }
 
   async function handleDelete(a: Agent) {
-    if (!window.confirm(`Naozaj chcete zmazať technika "${a.name}"? Tickety, ktoré mu boli priradené, ostanú priradené menom, ale nebude ich už možné vybrať z dropdownu.`)) return;
+    if (!window.confirm(`Naozaj chcete zmazať technika "${a.name}"? Tikety, ktoré mu boli priradené, ostanú priradené menom, ale nebude ich už možné vybrať z dropdownu.`)) return;
     await deleteAgent(a.id);
   }
 
@@ -71,7 +71,7 @@ export function AgentsPage() {
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NASTAVENIA</div>
       <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>IT technici</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Zoznam technikov, ktorí si medzi sebou môžu priraďovať tickety.
+        Zoznam technikov, ktorí si medzi sebou môžu priraďovať tikety.
         {!isMaster && ' Úpravy zoznamu a prístupov môže robiť len hlavný administrátor.'}
       </p>
 

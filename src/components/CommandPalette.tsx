@@ -74,7 +74,7 @@ export function CommandPalette() {
           autoFocus
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Hľadať ticket podľa čísla, predmetu alebo zákazníka…"
+          placeholder="Hľadať tiket podľa čísla, predmetu alebo zákazníka…"
           style={{
             width: '100%',
             padding: '16px 20px',

@@ -116,7 +116,7 @@ export function TicketsListPage() {
   }
 
   function exportCsv() {
-    const headers = ['Ticket', 'Predmet', 'Zákazník', 'Žiadateľ', 'Stav', 'Priorita', 'Pridelené', 'Vytvorený', 'Uzavretý'];
+    const headers = ['Tiket', 'Predmet', 'Firma', 'Žiadateľ', 'Stav', 'Priorita', 'Pridelené', 'Vytvorený', 'Uzavretý'];
     const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
     const rows = filtered.map((t) => [
       t.code,
@@ -134,7 +134,7 @@ export function TicketsListPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `tickety-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `tikety-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -144,9 +144,9 @@ export function TicketsListPage() {
       <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
         <div>
           <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>
-            TICKETY
+            TIKETY
           </div>
-          <h1 style={{ fontSize: 26, margin: '4px 0 4px' }}>Všetky tickety</h1>
+          <h1 style={{ fontSize: 26, margin: '4px 0 4px' }}>Všetky tikety</h1>
           <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 13.5 }}>
             Prehľad servisných tiketov a priradenia.
           </p>
@@ -312,7 +312,7 @@ export function TicketsListPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
-              {['Ticket', 'Predmet a zákazník', 'Stav', 'Priorita', 'Pridelené', 'Vytvorený', 'Uzavretý', ''].map((h) => (
+              {['Tiket', 'Predmet a firma', 'Stav', 'Priorita', 'Pridelené', 'Vytvorený', 'Uzavretý', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--color-text-faint)' }}>
                   {h}
                 </th>
@@ -323,14 +323,14 @@ export function TicketsListPage() {
             {loading && (
               <tr>
                 <td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                  Načítavam tickety…
+                  Načítavam tikety…
                 </td>
               </tr>
             )}
             {!loading && paged.length === 0 && (
               <tr>
                 <td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                  Žiadne tickety nezodpovedajú filtru.
+                  Žiadne tikety nezodpovedajú filtru.
                 </td>
               </tr>
             )}

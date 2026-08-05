@@ -34,36 +34,36 @@ export function AlertTicker() {
     const msgs: AlertMsg[] = [];
     if (unassigned > 0) {
       msgs.push({
-        text: `${unassigned} ${unassigned === 1 ? 'ticket čaká' : 'ticketov čaká'} na priradenie technikovi`,
+        text: `${unassigned} ${unassigned === 1 ? 'tiket čaká' : 'tiketov čaká'} na priradenie technikovi`,
         icon: 'user',
         to: '/unassigned',
       });
     }
     if (critical > 0) {
       msgs.push({
-        text: `${critical} kritických ticketov je momentálne otvorených`,
+        text: `${critical} kritických tiketov je momentálne otvorených`,
         icon: 'flag',
         to: '/tickets',
       });
     }
     if (waiting > 0) {
-      msgs.push({ text: `${waiting} ${waiting === 1 ? 'ticket čaká' : 'ticketov čaká'} na odpoveď klienta`, icon: 'clock', to: '/tickets' });
+      msgs.push({ text: `${waiting} ${waiting === 1 ? 'tiket čaká' : 'tiketov čaká'} na odpoveď klienta`, icon: 'clock', to: '/tickets' });
     }
     if (stale > 0) {
       msgs.push({
-        text: `${stale} ${stale === 1 ? 'ticket nemá' : 'ticketov nemá'} aktivitu viac ako 24 hodín`,
+        text: `${stale} ${stale === 1 ? 'tiket nemá' : 'tiketov nemá'} aktivitu viac ako 24 hodín`,
         icon: 'clock',
         to: '/tickets',
       });
     }
     if (createdToday > 0) {
-      msgs.push({ text: `Dnes pribudlo ${createdToday} nových ticketov`, icon: 'inbox', to: '/today' });
+      msgs.push({ text: `Dnes pribudlo ${createdToday} nových tiketov`, icon: 'inbox', to: '/today' });
     }
     if (closedToday > 0) {
-      msgs.push({ text: `Dnes bolo vyriešených ${closedToday} ticketov`, icon: 'check' });
+      msgs.push({ text: `Dnes bolo vyriešených ${closedToday} tiketov`, icon: 'check' });
     }
     if (msgs.length === 0) {
-      msgs.push({ text: 'Všetky tickety sú priradené a pod kontrolou', icon: 'check' });
+      msgs.push({ text: 'Všetky tikety sú priradené a pod kontrolou', icon: 'check' });
     }
     return msgs.slice(0, 5);
   }, [tickets]);

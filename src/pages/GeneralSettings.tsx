@@ -148,7 +148,7 @@ export function GeneralSettingsPage() {
             checked={settings.newTicketSoundEnabled}
             onChange={(e) => set('newTicketSoundEnabled', e.target.checked)}
           />
-          Prehrávať zvukový tón pri novom tickete
+          Prehrávať zvukový tón pri novom tikete
         </label>
 
         <button

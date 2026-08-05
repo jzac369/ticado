@@ -47,7 +47,7 @@ export function MyTicketsPage() {
     <div>
       <h1 style={{ fontSize: 22, margin: '0 0 4px' }}>Moje tikety</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        {isClient ? 'Tickety, ktoré ste osobne nahlásili.' : 'Tickety priradené vám.'}
+        {isClient ? 'Tikety, ktoré ste osobne nahlásili.' : 'Tikety priradené vám.'}
       </p>
 
       {!isClient && !myAgent && (
@@ -68,7 +68,7 @@ export function MyTicketsPage() {
           >
             Môj profil
           </button>
-          , aby sa tu zobrazili vaše tickety.
+          , aby sa tu zobrazili vaše tikety.
         </div>
       )}
 
@@ -76,7 +76,7 @@ export function MyTicketsPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
-              {['Ticket', 'Predmet', 'Zákazník', 'Žiadateľ', 'Kanál', 'Vek', 'Stav', 'Priorita', ''].map((h) => (
+              {['Tiket', 'Predmet', 'Firma', 'Žiadateľ', 'Kanál', 'Vek', 'Stav', 'Priorita', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--color-text-faint)' }}>
                   {h}
                 </th>
@@ -87,7 +87,7 @@ export function MyTicketsPage() {
             {myTickets.length === 0 && (
               <tr>
                 <td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                  Žiadne tickety.
+                  Žiadne tikety.
                 </td>
               </tr>
             )}

@@ -41,12 +41,12 @@ function LinkedTicketPanel({ code }: { code: string }) {
   }, [ticketId]);
 
   if (ticketId === undefined) {
-    return <div style={{ padding: 16, fontSize: 12.5, color: 'var(--color-text-faint)' }}>Načítavam ticket…</div>;
+    return <div style={{ padding: 16, fontSize: 12.5, color: 'var(--color-text-faint)' }}>Načítavam tiket…</div>;
   }
   if (ticketId === null || !ticket) {
     return (
       <div style={{ padding: 16, fontSize: 12.5, color: 'var(--color-text-faint)' }}>
-        Ticket {code} sa nenašiel.
+        Tiket {code} sa nenašiel.
       </div>
     );
   }
@@ -63,7 +63,7 @@ function LinkedTicketPanel({ code }: { code: string }) {
             onClick={() => navigate(`/tickets/${ticketId}`)}
             style={{ padding: '5px 10px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', background: 'var(--color-surface)', fontSize: 11.5, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}
           >
-            Otvoriť celý ticket →
+            Otvoriť celý tiket →
           </button>
         </div>
         <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
@@ -202,7 +202,7 @@ export function LiveChatInboxPage() {
         <div>
           <h1 style={{ fontSize: 22, margin: '0 0 4px' }}>Live chat</h1>
           <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-            Konverzácie z live chatu na verejnej podpornej stránke. Ak návštevník uviedol číslo ticketu, zobrazí sa
+            Konverzácie z live chatu na verejnej podpornej stránke. Ak návštevník uviedol číslo tiketu, zobrazí sa
             spolu s jeho záznamom vedľa chatu.
           </p>
         </div>

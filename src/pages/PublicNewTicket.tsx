@@ -10,7 +10,7 @@ import { TicketStatusLookup } from '../components/TicketStatusLookup';
 import { LiveChatWidget } from '../components/LiveChatWidget';
 import { Icon, type IconName } from '../components/Icon';
 
-const CATEGORIES = ['Infra', 'Security', 'Sieť', 'Backup', 'Aplikácie', 'Hardvér', 'Iné'];
+const CATEGORIES = ['Sieť', 'Backup', 'Aplikácie', 'Hardvér', 'Iné'];
 
 const TILES: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'monitor', title: 'IT problém', desc: 'Technické ťažkosti so systémami' },
@@ -341,7 +341,7 @@ export function PublicNewTicketPage() {
             </button>
             <h1 style={{ fontSize: 22, margin: '10px 0 4px' }}>Skontrolovať stav požiadavky</h1>
             <p style={{ margin: '0 0 24px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-              Zadajte číslo ticketu, ktoré ste dostali pri nahlásení problému.
+              Zadajte číslo tiketu, ktoré ste dostali pri nahlásení problému.
             </p>
             <TicketStatusLookup onBackHome={() => setView('landing')} />
           </div>

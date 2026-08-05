@@ -284,7 +284,7 @@ export function DashboardPage() {
   }, [filteredTickets, search]);
 
   function exportCsv() {
-    const headers = ['Ticket', 'Predmet', 'Zákazník', 'Stav', 'Priorita', 'Kanál', 'Pridelené', 'Vytvorený'];
+    const headers = ['Tiket', 'Predmet', 'Firma', 'Stav', 'Priorita', 'Kanál', 'Pridelené', 'Vytvorený'];
     const escape = (v: string) => `"${v.replace(/"/g, '""')}"`;
     const rows = filteredTickets.map((t) => [
       t.code,
@@ -342,7 +342,7 @@ export function DashboardPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Hľadať ticket, zákazníka, agenta…"
+            placeholder="Hľadať tiket, zákazníka, agenta…"
             style={{ ...toolbarInputStyle, paddingLeft: 26, width: '100%' }}
           />
         </div>
@@ -411,7 +411,7 @@ export function DashboardPage() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 8 }}>
-        <Panel title="Vývoj ticketov" subtitle={`${days}d`}>
+        <Panel title="Vývoj tiketov" subtitle={`${days}d`}>
           <LineAreaChart
             categories={trend.map((b) => b.label)}
             series={[
@@ -448,7 +448,7 @@ export function DashboardPage() {
           <RankBarList items={categoryBreakdown} color="var(--chart-series-3)" />
         </Panel>
 
-        <Panel title="Kanály ticketov" subtitle={`${days}d`}>
+        <Panel title="Kanály tiketov" subtitle={`${days}d`}>
           <div style={{ height: '100%', display: 'flex', alignItems: 'center' }}>
             <DonutChart data={channelDonut} size={86} />
           </div>
@@ -496,7 +496,7 @@ export function DashboardPage() {
           </div>
         </Panel>
 
-        <Panel title="Posledná aktivita" subtitle="Všetky tickety">
+        <Panel title="Posledná aktivita" subtitle="Všetky tikety">
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, height: '100%', overflowY: 'auto' }}>
             {activity.slice(0, 5).map((a) => (
               <div key={a.id} style={{ fontSize: 10.5 }}>
@@ -510,7 +510,7 @@ export function DashboardPage() {
           </div>
         </Panel>
 
-        <Panel title="Najnovšie tickety" subtitle={search.trim() ? 'Filtrované' : `Posledných ${recentFiltered.length}`}>
+        <Panel title="Najnovšie tikety" subtitle={search.trim() ? 'Filtrované' : `Posledných ${recentFiltered.length}`}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, height: '100%', overflowY: 'auto' }}>
             {recentFiltered.map((t) => (
               <div

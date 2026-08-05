@@ -22,9 +22,9 @@ export function ClientTicketsPage({ customerId, customerName }: { customerId: st
       <AnnouncementBanner />
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 20 }}>
         <div>
-          <h1 style={{ fontSize: 24, margin: '0 0 4px' }}>Moje tickety</h1>
+          <h1 style={{ fontSize: 24, margin: '0 0 4px' }}>Moje tikety</h1>
           <p style={{ margin: 0, color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-            Tickety firmy {customerName}.
+            Tikety firmy {customerName}.
           </p>
         </div>
         <button
@@ -38,7 +38,7 @@ export function ClientTicketsPage({ customerId, customerName }: { customerId: st
             fontWeight: 700,
           }}
         >
-          + Nový ticket
+          + Nový tiket
         </button>
       </div>
 
@@ -53,7 +53,7 @@ export function ClientTicketsPage({ customerId, customerName }: { customerId: st
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
-              {['Ticket', 'Predmet', 'Stav', 'Priorita', 'Vytvorený', ''].map((h) => (
+              {['Tiket', 'Predmet', 'Stav', 'Priorita', 'Vytvorený', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--color-text-faint)' }}>
                   {h}
                 </th>
@@ -64,7 +64,7 @@ export function ClientTicketsPage({ customerId, customerName }: { customerId: st
             {tickets.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                  Zatiaľ žiadne tickety.
+                  Zatiaľ žiadne tikety.
                 </td>
               </tr>
             )}

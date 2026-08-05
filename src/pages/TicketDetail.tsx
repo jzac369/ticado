@@ -118,15 +118,15 @@ export function TicketDetailPage() {
   }, [id]);
 
   if (ticket === undefined) {
-    return <div>Načítavam ticket…</div>;
+    return <div>Načítavam tiket…</div>;
   }
   if (ticket === null || !id) {
-    return <div>Ticket nebol nájdený. <Link to="/tickets">Späť na tickety</Link></div>;
+    return <div>Tiket nebol nájdený. <Link to="/tickets">Späť na tikety</Link></div>;
   }
   if (isClient && profile?.role === 'klient' && ticket.customerId !== profile.customerId) {
     return (
       <div>
-        Nemáte prístup k tomuto tiketu. <Link to="/">Späť na moje tickety</Link>
+        Nemáte prístup k tomuto tiketu. <Link to="/">Späť na moje tikety</Link>
       </div>
     );
   }
@@ -225,7 +225,7 @@ export function TicketDetailPage() {
         <div>
           <div style={{ fontSize: 12.5, marginBottom: 4 }}>
             <Link to="/tickets" style={{ color: 'var(--color-text-muted)' }}>
-              Tickety
+              Tikety
             </Link>{' '}
             / <span style={{ fontWeight: 700 }}>{ticket.code}</span>
           </div>
@@ -250,7 +250,7 @@ export function TicketDetailPage() {
             )}
           </h1>
           <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>
-            Ticket / {ticket.code} · Vytvorený {fmt(ticket.createdAt)} · {ticket.customerName}
+            Tiket / {ticket.code} · Vytvorený {fmt(ticket.createdAt)} · {ticket.customerName}
             {ticket.department && ` - ${ticket.department}`} · {CHANNEL_LABELS[ticket.channel]}
           </div>
         </div>
@@ -305,7 +305,7 @@ export function TicketDetailPage() {
             Komunikácia
           </div>
           <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)', marginBottom: 16 }}>
-            {visibleMessages.length} správ a poznámok v tickete
+            {visibleMessages.length} správ a poznámok v tikete
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -601,7 +601,7 @@ export function TicketDetailPage() {
                 borderTop: '1px solid var(--color-border)',
               }}
             >
-              <Icon name="lock" size={14} /> Tento ticket je uzavretý.
+              <Icon name="lock" size={14} /> Tento tiket je uzavretý.
             </div>
           )}
         </div>
@@ -612,11 +612,11 @@ export function TicketDetailPage() {
           <Panel
             title={
               <>
-                <Icon name="info" size={15} style={{ color: 'var(--color-primary)' }} /> Detaily ticketu
+                <Icon name="info" size={15} style={{ color: 'var(--color-primary)' }} /> Detaily tiketu
               </>
             }
           >
-            <DetailRow icon={<Icon name="check" size={14} />} label="Stav ticketu" first>
+            <DetailRow icon={<Icon name="check" size={14} />} label="Stav tiketu" first>
               {isClient ? (
                 <span style={{ fontWeight: 600, fontSize: 13.5 }}>{STATUS_LABELS[ticket.status]}</span>
               ) : (

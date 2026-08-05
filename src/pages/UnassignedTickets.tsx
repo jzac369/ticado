@@ -19,14 +19,14 @@ export function UnassignedTicketsPage() {
     <div>
       <h1 style={{ fontSize: 22, margin: '0 0 4px' }}>Nepriradené tikety</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Otvorené tickety, ktoré ešte nemajú priradeného technika.
+        Otvorené tikety, ktoré ešte nemajú priradeného technika.
       </p>
 
       <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
-              {['Ticket', 'Predmet', 'Zákazník', 'Stav', 'Priorita', ''].map((h) => (
+              {['Tiket', 'Predmet', 'Firma', 'Stav', 'Priorita', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--color-text-faint)' }}>
                   {h}
                 </th>
@@ -37,7 +37,7 @@ export function UnassignedTicketsPage() {
             {unassigned.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                  Všetky otvorené tickety sú priradené.
+                  Všetky otvorené tikety sú priradené.
                 </td>
               </tr>
             )}

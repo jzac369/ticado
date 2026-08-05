@@ -84,7 +84,7 @@ export function AnalyticsPage() {
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NASTAVENIA</div>
       <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Analytika technikov</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Reakčný čas a výkonnosť IT technikov podľa priradených ticketov.
+        Reakčný čas a výkonnosť IT technikov podľa priradených tiketov.
       </p>
 
       <div
@@ -128,7 +128,7 @@ export function AnalyticsPage() {
             {stats.length === 0 && (
               <tr>
                 <td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
-                  Zatiaľ žiadni technici s priradenými ticketmi.
+                  Zatiaľ žiadni technici s priradenými tiketmi.
                 </td>
               </tr>
             )}

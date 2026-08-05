@@ -179,7 +179,7 @@ export function LiveChatWidget() {
           <input
             value={ticketCode}
             onChange={(e) => setTicketCode(e.target.value)}
-            placeholder="Číslo ticketu, ak sa týka (nepovinné)"
+            placeholder="Číslo tiketu, ak sa týka (nepovinné)"
             style={chatInputStyle}
           />
           <button

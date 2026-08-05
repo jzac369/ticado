@@ -36,7 +36,7 @@ export function NotificationWatcher() {
 
       if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
       fresh.forEach((t) => {
-        new Notification(`Nový ticket: ${t.code}`, {
+        new Notification(`Nový tiket: ${t.code}`, {
           body: `${t.subject} · ${t.customerName}`,
           tag: t.id,
         });

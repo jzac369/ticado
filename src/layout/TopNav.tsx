@@ -25,7 +25,7 @@ interface TabItem {
 }
 
 const agentIcons: IconItem[] = [
-  { label: 'Tickety', icon: 'ticket', to: '/tickets' },
+  { label: 'Tikety', icon: 'ticket', to: '/tickets' },
   { label: 'Zákazníci', icon: 'users', to: '/customers' },
   { label: 'Live chat', icon: 'message', to: '/livechat' },
   { label: 'Reporty', icon: 'barChart', to: '/analytics' },
@@ -34,7 +34,7 @@ const agentIcons: IconItem[] = [
 ];
 
 const clientIcons: IconItem[] = [
-  { label: 'Tickety', icon: 'ticket', to: '/', end: true },
+  { label: 'Tikety', icon: 'ticket', to: '/', end: true },
   { label: 'Pomoc', icon: 'book', to: '/legend' },
 ];
 
@@ -309,7 +309,7 @@ export function TopNav() {
               whiteSpace: 'nowrap',
             }}
           >
-            + Nový ticket
+            + Nový tiket
           </button>
         </div>
       </div>

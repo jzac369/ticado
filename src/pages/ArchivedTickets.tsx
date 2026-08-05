@@ -21,16 +21,16 @@ export function ArchivedTicketsPage() {
 
   return (
     <div>
-      <h1 style={{ fontSize: 22, margin: '0 0 4px' }}>Archivované tickety</h1>
+      <h1 style={{ fontSize: 22, margin: '0 0 4px' }}>Archivované tikety</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Tickety odložené z bežných zoznamov. Obnovením sa ticket vráti medzi aktívne.
+        Tikety odložené z bežných zoznamov. Obnovením sa tiket vráti medzi aktívne.
       </p>
 
       <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
-              {['Ticket', 'Predmet', 'Zákazník', 'Stav', 'Priorita', ''].map((h) => (
+              {['Tiket', 'Predmet', 'Firma', 'Stav', 'Priorita', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--color-text-faint)' }}>
                   {h}
                 </th>

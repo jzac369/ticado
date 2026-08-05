@@ -131,7 +131,16 @@ export interface NewTicketInput {
 
 export async function createTicket(input: NewTicketInput) {
   const code = await nextTicketCode();
-  const assignedTo = input.autoAssign ? await nextRoundRobinAgent() : null;
+  let assignedTo: string | null = null;
+  if (input.autoAssign) {
+    try {
+      assignedTo = await nextRoundRobinAgent();
+    } catch (err) {
+      // Auto-assignment is a convenience, not a requirement - a ticket
+      // should still be created (unassigned) even if this lookup fails.
+      console.error('Round-robin assignment failed, creating ticket unassigned', err);
+    }
+  }
 
   const docRef = await addDoc(ticketsCol, {
     code,
@@ -181,7 +190,7 @@ export async function createTicket(input: NewTicketInput) {
     ticketId: docRef.id,
     authorName: input.requesterName,
     authorEmail: input.requesterEmail ?? '',
-    body: input.description || 'Ticket vytvorený.',
+    body: input.description || 'Tiket vytvorený.',
     isPrivate: false,
     ...(attachments ? { attachments } : {}),
     createdAt: serverTimestamp(),
@@ -189,7 +198,7 @@ export async function createTicket(input: NewTicketInput) {
 
   await addDoc(collection(db, 'tickets', docRef.id, 'activity'), {
     ticketId: docRef.id,
-    text: 'Ticket vytvorený',
+    text: 'Tiket vytvorený',
     actor: input.requesterName,
     createdAt: serverTimestamp(),
   });
@@ -290,7 +299,7 @@ export async function archiveTicket(ticketId: string, actor: string) {
   await updateDoc(doc(db, 'tickets', ticketId), { archived: true, updatedAt: serverTimestamp() });
   await addDoc(collection(db, 'tickets', ticketId, 'activity'), {
     ticketId,
-    text: 'Ticket archivovaný',
+    text: 'Tiket archivovaný',
     actor,
     createdAt: serverTimestamp(),
   });
@@ -300,7 +309,7 @@ export async function unarchiveTicket(ticketId: string, actor: string) {
   await updateDoc(doc(db, 'tickets', ticketId), { archived: false, updatedAt: serverTimestamp() });
   await addDoc(collection(db, 'tickets', ticketId, 'activity'), {
     ticketId,
-    text: 'Ticket obnovený z archívu',
+    text: 'Tiket obnovený z archívu',
     actor,
     createdAt: serverTimestamp(),
   });

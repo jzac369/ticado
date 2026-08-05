@@ -6,7 +6,7 @@ import type { Customer, TicketChannel, TicketPriority } from '../types';
 import { CHANNEL_LABELS, PRIORITY_LABELS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 
-const CATEGORIES = ['Infra', 'Security', 'Sieť', 'Backup', 'Aplikácie', 'Hardvér', 'Iné'];
+const CATEGORIES = ['Sieť', 'Backup', 'Aplikácie', 'Hardvér', 'Iné'];
 
 const priorityMeta: Record<TicketPriority, { hint: string }> = {
   nizka: { hint: 'Bez významného dopadu' },
@@ -73,7 +73,7 @@ export function NewTicketPage() {
       });
       navigate(`/tickets/${id}`);
     } catch (err) {
-      setError('Nepodarilo sa vytvoriť ticket. Skúste to znova.');
+      setError('Nepodarilo sa vytvoriť tiket. Skúste to znova.');
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -83,15 +83,15 @@ export function NewTicketPage() {
   return (
     <div style={{ maxWidth: 960 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)' }}>NOVÁ POŽIADAVKA</div>
-      <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Vytvoriť nový ticket</h1>
+      <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Vytvoriť nový tiket</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Evidencia ticketu s notifikáciami pre klienta.
+        Evidencia tiketu s notifikáciami pre klienta.
       </p>
 
       <form onSubmit={handleSubmit}>
         <Section title="1. Klasifikácia" subtitle="Základné zaradenie a zodpovednosť.">
           <div style={{ display: 'grid', gridTemplateColumns: isClient ? '1fr 1fr' : '1fr 1fr 1fr', gap: 16 }}>
-            <Field label="Zákazník">
+            <Field label="Firma">
               {isClient && profile?.role === 'klient' ? (
                 <input value={profile.customerName} disabled style={{ ...inputStyle, color: 'var(--color-text-faint)' }} />
               ) : (
@@ -101,7 +101,7 @@ export function NewTicketPage() {
                     onChange={(e) => setCustomerId(e.target.value)}
                     style={inputStyle}
                   >
-                    <option value="">— Nový zákazník —</option>
+                    <option value="">— Nová firma —</option>
                     {customers.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -112,7 +112,7 @@ export function NewTicketPage() {
                     <input
                       value={newCustomerName}
                       onChange={(e) => setNewCustomerName(e.target.value)}
-                      placeholder="Názov nového zákazníka"
+                      placeholder="Názov novej firmy"
                       style={{ ...inputStyle, marginTop: 8 }}
                     />
                   )}
@@ -166,7 +166,7 @@ export function NewTicketPage() {
           </div>
         </Section>
 
-        <Section title="2. Obsah ticketu" subtitle="Popíšte problém tak, aby sa dal začať riešiť bez ďalšieho vypytovania.">
+        <Section title="2. Obsah tiketu" subtitle="Popíšte problém tak, aby sa dal začať riešiť bez ďalšieho vypytovania.">
           <Field label="Meno žiadateľa">
             <input value={requesterName} onChange={(e) => setRequesterName(e.target.value)} style={inputStyle} />
           </Field>
@@ -215,7 +215,7 @@ export function NewTicketPage() {
               opacity: submitting ? 0.7 : 1,
             }}
           >
-            {submitting ? 'Vytváram…' : '✓ Vytvoriť ticket'}
+            {submitting ? 'Vytváram…' : '✓ Vytvoriť tiket'}
           </button>
         </div>
       </form>

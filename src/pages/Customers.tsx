@@ -63,7 +63,7 @@ export function CustomersPage() {
     const count = ticketCounts.get(c.id) ?? 0;
     const warning =
       count > 0
-        ? `Zákazník "${c.name}" má ${count} ticketov, ktoré týmto nezmažete, ale ostanú bez platného zákazníka. Naozaj chcete zmazať zákazníka?`
+        ? `Zákazník "${c.name}" má ${count} tiketov, ktoré týmto nezmažete, ale ostanú bez platného zákazníka. Naozaj chcete zmazať zákazníka?`
         : `Naozaj chcete zmazať zákazníka "${c.name}"?`;
     if (!window.confirm(warning)) return;
     await deleteCustomer(c.id);
@@ -73,7 +73,7 @@ export function CustomersPage() {
     <div>
       <h1 style={{ fontSize: 24, margin: '0 0 4px' }}>Zákazníci</h1>
       <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Zoznam zákazníkov, počet ich ticketov a správa kolegov.
+        Zoznam zákazníkov, počet ich tiketov a správa kolegov.
       </p>
 
       <form
@@ -130,7 +130,7 @@ export function CustomersPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
-              {['Firma', 'Kontakt', 'Email', 'Doména', 'Tickety', ''].map((h) => (
+              {['Firma', 'Kontakt', 'Email', 'Doména', 'Tikety', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, color: 'var(--color-text-faint)' }}>
                   {h}
                 </th>

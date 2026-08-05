@@ -55,7 +55,7 @@ export function TicketStatusLookup({ onBackHome }: { onBackHome?: () => void }) 
 
   async function handleCancel() {
     if (!lookup) return;
-    if (!window.confirm('Naozaj chcete zrušiť tento ticket? Táto akcia sa nedá vrátiť späť.')) return;
+    if (!window.confirm('Naozaj chcete zrušiť tento tiket? Táto akcia sa nedá vrátiť späť.')) return;
     setCancelling(true);
     try {
       await cancelTicketByVisitor(lookup);
@@ -72,7 +72,7 @@ export function TicketStatusLookup({ onBackHome }: { onBackHome?: () => void }) 
         <input
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="Číslo ticketu, napr. TIK000123"
+          placeholder="Číslo tiketu, napr. TIK000123"
           style={inputStyle}
         />
         <input
@@ -102,7 +102,7 @@ export function TicketStatusLookup({ onBackHome }: { onBackHome?: () => void }) 
 
       {notFound && (
         <div style={{ color: 'var(--color-danger)', fontSize: 13.5, marginBottom: 16 }}>
-          Ticket sa nenašiel. Skontrolujte prosím číslo ticketu a emailovú adresu, ktorú ste použili pri nahlásení.
+          Tiket sa nenašiel. Skontrolujte prosím číslo tiketu a emailovú adresu, ktorú ste použili pri nahlásení.
         </div>
       )}
 
@@ -179,21 +179,21 @@ export function TicketStatusLookup({ onBackHome }: { onBackHome?: () => void }) 
                   opacity: cancelling ? 0.7 : 1,
                 }}
               >
-                {cancelling ? 'Ruším…' : '✕ Zrušiť ticket'}
+                {cancelling ? 'Ruším…' : '✕ Zrušiť tiket'}
               </button>
             )}
           </div>
 
           {cancelled && (
             <div style={{ color: 'var(--color-success)', fontSize: 13.5, marginBottom: 16 }}>
-              ✓ Ticket bol zrušený.
+              ✓ Tiket bol zrušený.
             </div>
           )}
 
           {lookup.status !== 'uzavrety' &&
             (sent ? (
               <div style={{ color: 'var(--color-success)', fontSize: 13.5 }}>
-                ✓ Vaša správa bola odoslaná{lookup.hasAgent ? ' technikovi' : ' a zapísaná do záznamu ticketu'}.
+                ✓ Vaša správa bola odoslaná{lookup.hasAgent ? ' technikovi' : ' a zapísaná do záznamu tiketu'}.
               </div>
             ) : (
               <form onSubmit={handleFollowUp}>
