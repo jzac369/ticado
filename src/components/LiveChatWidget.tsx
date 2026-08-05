@@ -8,6 +8,7 @@ import {
   type ChatMessage,
   type LiveChat,
 } from '../firebase/livechat';
+import { Icon } from './Icon';
 
 const STORAGE_KEY = 'ticado_livechat_id';
 const NAME_KEY = 'ticado_livechat_name';
@@ -86,20 +87,24 @@ export function LiveChatWidget() {
           position: 'fixed',
           right: 24,
           bottom: 24,
-          width: 54,
-          height: 54,
-          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '12px 18px',
+          borderRadius: 999,
           background: 'var(--color-primary)',
           color: '#fff',
           border: 'none',
-          fontSize: 22,
+          fontSize: 13,
+          fontWeight: 700,
           boxShadow: 'var(--shadow-lg)',
           cursor: 'pointer',
           zIndex: 50,
         }}
         aria-label="Otvoriť live chat"
       >
-        💬
+        <Icon name="message" size={16} />
+        Live Chat
       </button>
     );
   }
@@ -132,7 +137,9 @@ export function LiveChatWidget() {
           color: '#fff',
         }}
       >
-        <div style={{ fontWeight: 700, fontSize: 13.5 }}>💬 Live chat s podporou</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontWeight: 700, fontSize: 13.5 }}>
+          <Icon name="message" size={14} /> Live chat s podporou
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {chatId && !ended && (
             <button

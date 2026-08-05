@@ -4,6 +4,7 @@ import { Icon, type IconName } from '../components/Icon';
 const CARDS: { title: string; desc: string; to: string; icon: IconName }[] = [
   { title: 'IT technici', desc: 'Meno, pozícia a email technikov, priraďovanie ticketov.', to: '/agents', icon: 'tool' },
   { title: 'Šablóny odpovedí', desc: 'Preddefinované texty pre rýchle odpovede.', to: '/templates', icon: 'list' },
+  { title: 'Znalostná báza', desc: 'Články zobrazené v sekcii "Najčastejšie riešené témy" na /support.', to: '/kb-articles', icon: 'lightbulb' },
   { title: 'Banner pre klientov', desc: 'Oznámenie o odstávke alebo dôležitej správe.', to: '/announcement', icon: 'megaphone' },
   { title: 'Analytika technikov', desc: 'Reakčný čas a rebríček výkonnosti.', to: '/analytics', icon: 'barChart' },
   { title: 'Zákazníci', desc: 'Zoznam firiem a ich kolegov (klientske účty).', to: '/customers', icon: 'users' },

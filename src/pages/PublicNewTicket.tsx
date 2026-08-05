@@ -1,17 +1,33 @@
-import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { createTicket } from '../firebase/tickets';
 import { subscribeCustomers } from '../firebase/customers';
 import { subscribeGeneralSettings, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
+import { subscribeKbArticles, type KbArticle } from '../firebase/kbArticles';
 import type { Customer, TicketPriority } from '../types';
 import { PRIORITY_LABELS } from '../types';
-import { Logo } from '../components/Logo';
 import { AnnouncementBanner } from '../components/AnnouncementBanner';
 import { TicketStatusLookup } from '../components/TicketStatusLookup';
 import { LiveChatWidget } from '../components/LiveChatWidget';
+import { Icon, type IconName } from '../components/Icon';
 
 const CATEGORIES = ['Infra', 'Security', 'Sieť', 'Backup', 'Aplikácie', 'Hardvér', 'Iné'];
 
-type SupportView = 'landing' | 'report' | 'status';
+const TILES: { icon: IconName; title: string; desc: string }[] = [
+  { icon: 'monitor', title: 'IT problém', desc: 'Technické ťažkosti so systémami' },
+  { icon: 'lock', title: 'Prístup / heslo', desc: 'Problémy s prístupom, heslami a účtami' },
+  { icon: 'tool', title: 'Hardvér', desc: 'Počítače, tlačiarne, monitory a iné zariadenia' },
+  { icon: 'layers', title: 'Softvér', desc: 'Aplikácie, licencie a inštalácie' },
+  { icon: 'plus', title: 'Nová požiadavka', desc: 'Požiadanie o prístup, nástroj alebo službu' },
+  { icon: 'info', title: 'Iné', desc: 'Ostatné požiadavky a otázky' },
+];
+
+const HOW_IT_WORKS: { icon: IconName; title: string; desc: string }[] = [
+  { icon: 'edit', title: 'Nahlásenie', desc: 'Vyberte kategóriu a popíšte problém čo najpodrobnejšie. Priložte súbory alebo snímky, ak pomôžu.' },
+  { icon: 'users', title: 'Spracovanie', desc: 'Náš tím vašu požiadavku vyhodnotí, priradí riešiteľa a bude vás informovať o stave.' },
+  { icon: 'check', title: 'Riešenie', desc: 'Problém vyriešime a uzavrieme požiadavku. Spätnú väzbu od vás nám pomáha zlepšovať sa.' },
+];
+
+type SupportView = 'landing' | 'report' | 'status' | 'knowledge';
 
 function emptyForm() {
   return {
@@ -37,9 +53,20 @@ export function PublicNewTicketPage() {
   const [createdCode, setCreatedCode] = useState<string | null>(null);
   const [lastEmail, setLastEmail] = useState('');
   const [settings, setSettings] = useState<GeneralSettings>(DEFAULT_GENERAL_SETTINGS);
+  const [kbArticles, setKbArticles] = useState<KbArticle[]>([]);
 
   useEffect(() => subscribeCustomers(setCustomers), []);
   useEffect(() => subscribeGeneralSettings(setSettings), []);
+  useEffect(() => subscribeKbArticles(setKbArticles), []);
+
+  const isOpenNow = useMemo(() => {
+    const now = new Date();
+    if (!settings.supportOpenDays.includes(now.getDay())) return false;
+    const [fromH, fromM] = settings.supportOpenFrom.split(':').map(Number);
+    const [toH, toM] = settings.supportOpenTo.split(':').map(Number);
+    const minutesNow = now.getHours() * 60 + now.getMinutes();
+    return minutesNow >= fromH * 60 + fromM && minutesNow <= toH * 60 + toM;
+  }, [settings]);
 
   function set<K extends keyof ReturnType<typeof emptyForm>>(key: K, value: ReturnType<typeof emptyForm>[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -119,75 +146,183 @@ export function PublicNewTicketPage() {
   }
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: 'var(--color-bg)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        padding: '40px 20px',
-      }}
-    >
-      <div style={{ marginBottom: 28 }}>
-        <Logo size={32} />
-      </div>
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)', display: 'flex', flexDirection: 'column' }}>
+      <header
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '14px 24px',
+          background: 'var(--color-surface)',
+          borderBottom: '1px solid var(--color-border)',
+        }}
+      >
+        <img
+          src={`${import.meta.env.BASE_URL}rona-logo.png`}
+          alt="RONA"
+          width={36}
+          height={36}
+          style={{ borderRadius: 8, display: 'block' }}
+        />
+        <span style={{ fontSize: 16 }}>
+          <strong style={{ fontWeight: 800 }}>RONA</strong> Technická podpora
+        </span>
+      </header>
 
-      <div style={{ width: '100%', maxWidth: 640 }}>
+      <div style={{ width: '100%', maxWidth: view === 'landing' || view === 'knowledge' ? 1100 : 640, margin: '0 auto', padding: '24px 20px 60px', flex: 1 }}>
         <AnnouncementBanner />
 
         {view === 'landing' && (
-          <div
-            style={{
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: 40,
-              textAlign: 'center',
-              boxShadow: 'var(--shadow-lg)',
-            }}
-          >
-            <h1 style={{ fontSize: 24, margin: '0 0 8px' }}>{settings.supportWelcomeTitle}</h1>
-            <p style={{ color: 'var(--color-text-muted)', fontSize: 14, margin: '0 auto 28px', maxWidth: 420 }}>
-              {settings.supportWelcomeSubtitle}
-            </p>
-            <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
-              <button
-                onClick={() => setView('report')}
-                style={{
-                  padding: '14px 24px',
-                  background: 'var(--color-primary)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: 'var(--radius-md)',
-                  fontWeight: 700,
-                  fontSize: 14,
-                  minWidth: 220,
-                }}
-              >
-                🆘 Nahlásiť problém
-              </button>
-              <button
-                onClick={() => setView('status')}
-                style={{
-                  padding: '14px 24px',
-                  background: 'var(--color-surface)',
-                  color: 'var(--color-text)',
-                  border: '1.5px solid var(--color-border)',
-                  borderRadius: 'var(--radius-md)',
-                  fontWeight: 700,
-                  fontSize: 14,
-                  minWidth: 220,
-                }}
-              >
-                🔍 Skontrolovať stav požiadavky
-              </button>
+          <>
+            <div
+              style={{
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-lg)',
+                padding: 28,
+                marginBottom: 16,
+                display: 'grid',
+                gridTemplateColumns: '240px 1fr',
+                gap: 28,
+                alignItems: 'center',
+              }}
+            >
+              <img
+                src={`${import.meta.env.BASE_URL}support-hero.png`}
+                alt=""
+                style={{ width: '100%', height: 'auto', display: 'block' }}
+              />
+              <div>
+                <h1 style={{ fontSize: 26, margin: '0 0 8px', fontWeight: 800 }}>{settings.supportWelcomeTitle}</h1>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: 14.5, margin: '0 0 22px', maxWidth: 520 }}>
+                  {settings.supportWelcomeSubtitle}
+                </p>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <button onClick={() => setView('report')} style={heroPrimaryBtn}>
+                    <Icon name="edit" size={14} /> Nahlásiť problém
+                  </button>
+                  <button onClick={() => setView('status')} style={heroSecondaryBtn}>
+                    <Icon name="search" size={14} /> Skontrolovať stav požiadavky
+                  </button>
+                  <button onClick={() => setView('knowledge')} style={heroSecondaryBtn}>
+                    <Icon name="book" size={14} /> Znalostná báza
+                  </button>
+                </div>
+              </div>
             </div>
-            {settings.supportHours && (
-              <p style={{ marginTop: 24, fontSize: 12, color: 'var(--color-text-faint)' }}>
-                Prevádzkové hodiny podpory: {settings.supportHours}
-              </p>
-            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 16 }}>
+              {TILES.map((t) => (
+                <div key={t.title} style={tileStyle}>
+                  <Icon name={t.icon} size={17} style={{ color: 'var(--color-primary)', marginBottom: 8 }} />
+                  <div style={{ fontWeight: 700, fontSize: 13 }}>{t.title}</div>
+                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>{t.desc}</div>
+                </div>
+              ))}
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-lg)',
+                marginBottom: 16,
+              }}
+            >
+              <InfoStripItem icon="clock" label="Prevádzkové hodiny podpory">
+                <div style={{ fontWeight: 700, fontSize: 13.5 }}>{settings.supportHours || '—'}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3, fontSize: 11.5, color: 'var(--color-text-muted)' }}>
+                  <span
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: '50%',
+                      background: isOpenNow ? 'var(--color-success)' : 'var(--color-text-faint)',
+                      flexShrink: 0,
+                    }}
+                  />
+                  {isOpenNow ? 'Sme tu pre vás' : 'Mimo prevádzkových hodín'}
+                </div>
+              </InfoStripItem>
+
+              {settings.supportPhone && (
+                <InfoStripItem icon="phone" label="Kontakt pre urgentné prípady">
+                  <div style={{ fontWeight: 700, fontSize: 13.5 }}>{settings.supportPhone}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--color-text-muted)', marginTop: 3 }}>Dostupné počas prevádzkových hodín</div>
+                </InfoStripItem>
+              )}
+
+              <InfoStripItem icon="lightbulb" label="Najčastejšie riešené témy">
+                <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>Pozrite si tipy a riešenia</div>
+                <button onClick={() => setView('knowledge')} style={inlineLinkStyle}>
+                  Znalostná báza →
+                </button>
+              </InfoStripItem>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 16 }}>
+              <div style={panelStyle}>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Ako to funguje</div>
+                <div style={{ display: 'flex', gap: 10 }}>
+                  {HOW_IT_WORKS.map((step, i) => (
+                    <div key={step.title} style={{ display: 'flex', alignItems: 'flex-start', flex: 1, gap: 6 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                          <span style={stepIconWrap}>
+                            <Icon name={step.icon} size={16} />
+                          </span>
+                          <span style={stepNumber}>{i + 1}</span>
+                          <span style={{ fontWeight: 700, fontSize: 13 }}>{step.title}</span>
+                        </div>
+                        <div style={{ fontSize: 11.5, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>{step.desc}</div>
+                      </div>
+                      {i < HOW_IT_WORKS.length - 1 && (
+                        <Icon name="chevronRight" size={16} style={{ color: 'var(--color-text-faint)', marginTop: 12, flexShrink: 0 }} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div style={panelStyle}>
+                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>Obľúbené články / Znalostná báza</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {kbArticles.slice(0, 3).map((a) => (
+                    <KbRow key={a.id} article={a} />
+                  ))}
+                  {kbArticles.length === 0 && (
+                    <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)' }}>Zatiaľ žiadne články.</div>
+                  )}
+                </div>
+                {kbArticles.length > 0 && (
+                  <button onClick={() => setView('knowledge')} style={{ ...inlineLinkStyle, marginTop: 10 }}>
+                    Zobraziť všetky články →
+                  </button>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+
+        {view === 'knowledge' && (
+          <div style={panelStyle}>
+            <button onClick={() => setView('landing')} style={backLinkStyle}>
+              ← Späť
+            </button>
+            <h1 style={{ fontSize: 22, margin: '10px 0 4px' }}>Znalostná báza</h1>
+            <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
+              Tipy a návody na najčastejšie riešené témy.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {kbArticles.map((a) => (
+                <KbRow key={a.id} article={a} />
+              ))}
+              {kbArticles.length === 0 && (
+                <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)' }}>Zatiaľ žiadne články.</div>
+              )}
+            </div>
           </div>
         )}
 
@@ -479,6 +614,68 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+function InfoStripItem({ icon, label, children }: { icon: IconName; label: string; children: ReactNode }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '16px 22px', flex: '1 1 220px', borderRight: '1px solid var(--color-border)' }}>
+      <span
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: '50%',
+          background: 'var(--color-primary-bg)',
+          color: 'var(--color-primary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <Icon name={icon} size={16} />
+      </span>
+      <div>
+        <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-faint)', marginBottom: 2 }}>{label}</div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function KbRow({ article }: { article: KbArticle }) {
+  const clickable = Boolean(article.url);
+  return (
+    <div
+      onClick={clickable ? () => window.open(article.url, '_blank', 'noopener,noreferrer') : undefined}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 10,
+        padding: '9px 8px',
+        borderRadius: 'var(--radius-sm)',
+        cursor: clickable ? 'pointer' : 'default',
+      }}
+    >
+      <Icon name="book" size={14} style={{ color: 'var(--color-text-faint)', flexShrink: 0 }} />
+      <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{article.title}</span>
+      {article.category && (
+        <span
+          style={{
+            fontSize: 10.5,
+            fontWeight: 600,
+            padding: '2px 8px',
+            borderRadius: 999,
+            background: 'var(--color-surface-2)',
+            color: 'var(--color-text-muted)',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {article.category}
+        </span>
+      )}
+      <Icon name="chevronRight" size={14} style={{ color: 'var(--color-text-faint)', flexShrink: 0 }} />
+    </div>
+  );
+}
+
 const inputStyle: CSSProperties = {
   width: '100%',
   padding: '10px 12px',
@@ -494,6 +691,84 @@ const secondaryBtn: CSSProperties = {
   background: 'var(--color-surface)',
   fontWeight: 700,
   fontSize: 13.5,
+};
+
+const heroPrimaryBtn: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '13px 20px',
+  background: 'var(--color-primary)',
+  color: '#fff',
+  border: 'none',
+  borderRadius: 'var(--radius-md)',
+  fontWeight: 700,
+  fontSize: 13.5,
+  cursor: 'pointer',
+};
+
+const heroSecondaryBtn: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  padding: '13px 20px',
+  background: 'var(--color-surface)',
+  color: 'var(--color-text)',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-md)',
+  fontWeight: 700,
+  fontSize: 13.5,
+  cursor: 'pointer',
+};
+
+const tileStyle: CSSProperties = {
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-lg)',
+  padding: '16px 14px',
+};
+
+const panelStyle: CSSProperties = {
+  background: 'var(--color-surface)',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-lg)',
+  padding: 22,
+};
+
+const stepIconWrap: CSSProperties = {
+  width: 30,
+  height: 30,
+  borderRadius: '50%',
+  background: 'var(--color-primary-bg)',
+  color: 'var(--color-primary)',
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  flexShrink: 0,
+};
+
+const stepNumber: CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 17,
+  height: 17,
+  borderRadius: '50%',
+  background: 'var(--color-primary)',
+  color: '#fff',
+  fontSize: 10,
+  fontWeight: 700,
+  flexShrink: 0,
+};
+
+const inlineLinkStyle: CSSProperties = {
+  background: 'none',
+  border: 'none',
+  padding: 0,
+  color: 'var(--color-primary)',
+  fontWeight: 700,
+  fontSize: 12,
+  cursor: 'pointer',
 };
 
 const backLinkStyle: CSSProperties = {

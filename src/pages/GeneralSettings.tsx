@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { subscribeGeneralSettings, updateGeneralSettings, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
 
+const DAY_LABELS = ['Ne', 'Po', 'Ut', 'St', 'Št', 'Pi', 'So'];
+
 export function GeneralSettingsPage() {
   const [settings, setSettings] = useState<GeneralSettings>(DEFAULT_GENERAL_SETTINGS);
   const [saving, setSaving] = useState(false);
@@ -60,11 +62,63 @@ export function GeneralSettingsPage() {
         </div>
 
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Prevádzkové hodiny podpory</div>
+          <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Prevádzkové hodiny podpory (zobrazený text)</div>
           <input
             value={settings.supportHours}
             onChange={(e) => set('supportHours', e.target.value)}
             placeholder="napr. Po–Pi 8:00–16:00"
+            style={inputStyle}
+          />
+        </div>
+
+        <div style={{ marginBottom: 16, background: 'var(--color-surface-2)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: 14 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 4 }}>Živý indikátor "Sme tu pre vás"</div>
+          <p style={{ margin: '0 0 10px', fontSize: 11.5, color: 'var(--color-text-muted)' }}>
+            Určuje, kedy na /support svieti zelená guľôčka. Nastavte rovnako ako text vyššie.
+          </p>
+          <div style={{ display: 'flex', gap: 5, marginBottom: 10 }}>
+            {DAY_LABELS.map((label, i) => {
+              const active = settings.supportOpenDays.includes(i);
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() =>
+                    set(
+                      'supportOpenDays',
+                      active ? settings.supportOpenDays.filter((d) => d !== i) : [...settings.supportOpenDays, i].sort(),
+                    )
+                  }
+                  style={{
+                    width: 34,
+                    padding: '6px 0',
+                    border: `1px solid ${active ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                    borderRadius: 'var(--radius-sm)',
+                    background: active ? 'var(--color-primary)' : 'var(--color-surface)',
+                    color: active ? '#fff' : 'var(--color-text-muted)',
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+            <input type="time" value={settings.supportOpenFrom} onChange={(e) => set('supportOpenFrom', e.target.value)} style={{ ...inputStyle, width: 120 }} />
+            <span style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>do</span>
+            <input type="time" value={settings.supportOpenTo} onChange={(e) => set('supportOpenTo', e.target.value)} style={{ ...inputStyle, width: 120 }} />
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ fontSize: 12.5, fontWeight: 600, marginBottom: 6 }}>Telefón pre urgentné prípady</div>
+          <input
+            value={settings.supportPhone}
+            onChange={(e) => set('supportPhone', e.target.value)}
+            placeholder="napr. +421 2 1234 5678 (nechajte prázdne, ak sa nemá zobrazovať)"
             style={inputStyle}
           />
         </div>

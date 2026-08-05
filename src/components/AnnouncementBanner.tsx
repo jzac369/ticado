@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { subscribeAnnouncement, type Announcement } from '../firebase/announcement';
+import { Icon } from './Icon';
 
 const TONE_COLORS: Record<Announcement['tone'], { fg: string; bg: string; border: string }> = {
   info: { fg: 'var(--color-info)', bg: 'var(--color-info-bg)', border: 'var(--color-info)' },
@@ -31,8 +32,24 @@ export function AnnouncementBanner() {
         marginBottom: 20,
       }}
     >
-      <span style={{ fontSize: 17 }}>📢</span>
-      <span>{announcement.message}</span>
+      <span
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: 24,
+          height: 24,
+          borderRadius: '50%',
+          background: colors.fg,
+          color: '#fff',
+          flexShrink: 0,
+        }}
+      >
+        <Icon name="megaphone" size={12} />
+      </span>
+      <span>
+        <strong>Oznámenie:</strong> {announcement.message}
+      </span>
     </div>
   );
 }

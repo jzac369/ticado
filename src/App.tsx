@@ -25,6 +25,7 @@ import { SettingsHubPage } from './pages/SettingsHub';
 import { ProfilePage } from './pages/Profile';
 import { LiveChatInboxPage } from './pages/LiveChatInbox';
 import { GeneralSettingsPage } from './pages/GeneralSettings';
+import { KbArticlesSettingsPage } from './pages/KbArticlesSettings';
 
 function App() {
   return (
@@ -156,6 +157,14 @@ function App() {
               element={
                 <AgentOnlyRoute>
                   <GeneralSettingsPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="kb-articles"
+              element={
+                <AgentOnlyRoute>
+                  <KbArticlesSettingsPage />
                 </AgentOnlyRoute>
               }
             />

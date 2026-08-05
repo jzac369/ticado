@@ -148,6 +148,12 @@ service cloud.firestore {
       allow read, write: if isAgent();
     }
 
+    // Knowledge-base article links shown on the public /support page.
+    match /kbArticles/{articleId} {
+      allow read: if true;
+      allow write: if isAgent();
+    }
+
     // Public maintenance/outage announcement banner - shown to anyone
     // (clients and the public intake form), editable only by agents.
     match /settings/{settingId} {
