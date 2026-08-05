@@ -68,7 +68,13 @@ export function LineAreaChart({ categories, series, height = 220 }: Props) {
           ))}
         </div>
       )}
-      <svg viewBox={`0 0 ${width} ${height}`} width="100%" style={{ display: 'block', overflow: 'visible' }}>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        width="100%"
+        height={height}
+        preserveAspectRatio="none"
+        style={{ display: 'block', overflow: 'visible' }}
+      >
         {ticksY.map((t) => (
           <g key={t}>
             <line x1={PAD.left} x2={width - PAD.right} y1={y(t)} y2={y(t)} stroke="var(--chart-grid)" strokeWidth={0.5} />

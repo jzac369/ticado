@@ -443,7 +443,7 @@ export function DashboardPage() {
         />
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr', gap: 8, marginBottom: 8 }}>
         <Panel
           title="Vývoj tiketov"
           headerExtra={
@@ -469,15 +469,17 @@ export function DashboardPage() {
 
         <Panel title="Podľa priority" subtitle="Otvorené" tall>
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <DonutChart data={priorityDonut} size={148} />
+            <DonutChart data={priorityDonut} size={116} />
           </div>
         </Panel>
 
         <Panel title="Podľa stavu" subtitle="Všetky" tall>
           <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <DonutChart data={statusDonut} size={148} />
+            <DonutChart data={statusDonut} size={116} />
           </div>
         </Panel>
+
+        <AktualityPanel authorName={myAgentName} height={PANEL_HEIGHT_TALL} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 8 }}>
@@ -515,7 +517,7 @@ export function DashboardPage() {
         </Panel>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 8 }}>
         <Panel
           title="Výkon agentov"
           headerExtra={
@@ -588,10 +590,7 @@ export function DashboardPage() {
             {recentFiltered.length === 0 && <div style={{ fontSize: 11, color: 'var(--color-text-faint)' }}>Žiadne výsledky.</div>}
           </div>
         </Panel>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-        <AktualityPanel authorName={myAgentName} />
         <Panel title="Priemerný čas riešenia" subtitle="Podľa priority">
           <RankBarList items={resolutionByPriority} color="var(--chart-series-7)" />
         </Panel>
@@ -842,7 +841,7 @@ function fmtNoteTime(ts: DashboardNote['createdAt']) {
   return ts.toDate().toLocaleString('sk-SK', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
 }
 
-function AktualityPanel({ authorName }: { authorName: string }) {
+function AktualityPanel({ authorName, height = PANEL_HEIGHT }: { authorName: string; height?: number }) {
   const [notes, setNotes] = useState<DashboardNote[]>([]);
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState('');
@@ -863,7 +862,7 @@ function AktualityPanel({ authorName }: { authorName: string }) {
         border: '1px solid var(--color-border)',
         borderRadius: 'var(--radius-md)',
         padding: 9,
-        height: PANEL_HEIGHT,
+        height,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
