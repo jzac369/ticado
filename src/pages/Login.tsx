@@ -52,15 +52,15 @@ export function LoginPage() {
           justifyContent: 'space-between',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <img
             src={`${import.meta.env.BASE_URL}rona-logo.png`}
             alt="RONA"
-            width={32}
-            height={32}
-            style={{ borderRadius: 7, display: 'block' }}
+            width={113}
+            height={113}
+            style={{ borderRadius: 20, display: 'block' }}
           />
-          <span style={{ fontWeight: 700, fontSize: 20 }}>RONA</span>
+          <span style={{ fontWeight: 700, fontSize: 28 }}>RONA</span>
         </div>
 
         <div>
