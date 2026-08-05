@@ -47,7 +47,7 @@ export function DonutChart({ data, size = 140 }: { data: DonutSlice[]; size?: nu
         </text>
         {!compact && (
           <text x={center} y={center + 14} textAnchor="middle" fontSize={10.5} fill="var(--color-text-faint)">
-            spolu
+Spolu
           </text>
         )}
       </svg>
@@ -57,7 +57,12 @@ export function DonutChart({ data, size = 140 }: { data: DonutSlice[]; size?: nu
           <div key={d.label} style={{ display: 'flex', alignItems: 'center', gap: compact ? 5 : 8, fontSize: compact ? 11 : 12.5 }}>
             <span style={{ width: compact ? 7 : 10, height: compact ? 7 : 10, borderRadius: '50%', background: d.color, flexShrink: 0 }} />
             <span style={{ color: 'var(--color-text-muted)' }}>{d.label}</span>
-            <span style={{ fontWeight: 700, marginLeft: 'auto' }}>{d.value}</span>
+            <span style={{ fontWeight: 700, marginLeft: 'auto' }}>
+              {d.value}
+              {total > 0 && (
+                <span style={{ color: 'var(--color-text-faint)', fontWeight: 600 }}> ({Math.round((d.value / total) * 100)}%)</span>
+              )}
+            </span>
           </div>
         ))}
       </div>

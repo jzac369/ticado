@@ -20,6 +20,8 @@
   --color-danger-bg: rgba(220, 38, 38, 0.1);
   --color-info: #2563eb;
   --color-info-bg: rgba(37, 99, 235, 0.1);
+  --color-critical: #7c3aed;
+  --color-critical-bg: rgba(124, 58, 237, 0.1);
 
   --shadow-sm: 0 1px 2px rgba(16, 17, 33, 0.06);
   --shadow-md: 0 4px 16px rgba(16, 17, 33, 0.08);
@@ -102,6 +104,8 @@
     --color-danger-bg: rgba(248, 113, 113, 0.14);
     --color-info: #60a5fa;
     --color-info-bg: rgba(96, 165, 250, 0.12);
+    --color-critical: #a78bfa;
+    --color-critical-bg: rgba(167, 139, 250, 0.14);
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.35);
