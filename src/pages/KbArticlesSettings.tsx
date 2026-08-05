@@ -11,7 +11,7 @@ function emptyForm() {
   return { title: '', category: '', url: '' };
 }
 
-export function KbArticlesSettingsPage() {
+export function KbArticlesSettingsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [articles, setArticles] = useState<KbArticle[]>([]);
   const [form, setForm] = useState(emptyForm());
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -59,12 +59,16 @@ export function KbArticlesSettingsPage() {
 
   return (
     <div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NASTAVENIA</div>
-      <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Znalostná báza</h1>
-      <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Články zobrazené v sekcii "Najčastejšie riešené témy" na verejnej podpornej stránke /support. Prvé 3 sa
-        zobrazujú priamo na úvode, celý zoznam po kliknutí na "Znalostná báza".
-      </p>
+      {!embedded && (
+        <>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NASTAVENIA</div>
+          <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Znalostná báza</h1>
+          <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
+            Články zobrazené v sekcii "Najčastejšie riešené témy" na verejnej podpornej stránke /support. Prvé 3 sa
+            zobrazujú priamo na úvode, celý zoznam po kliknutí na "Znalostná báza".
+          </p>
+        </>
+      )}
 
       <form
         onSubmit={handleAdd}

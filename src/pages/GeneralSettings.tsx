@@ -3,7 +3,7 @@ import { subscribeGeneralSettings, updateGeneralSettings, DEFAULT_GENERAL_SETTIN
 
 const DAY_LABELS = ['Ne', 'Po', 'Ut', 'St', 'Št', 'Pi', 'So'];
 
-export function GeneralSettingsPage() {
+export function GeneralSettingsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [settings, setSettings] = useState<GeneralSettings>(DEFAULT_GENERAL_SETTINGS);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -28,11 +28,15 @@ export function GeneralSettingsPage() {
 
   return (
     <div style={{ maxWidth: 640 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NASTAVENIA</div>
-      <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Všeobecné nastavenia</h1>
-      <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Texty a možnosti zobrazené na verejnej podpornej stránke /support.
-      </p>
+      {!embedded && (
+        <>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NASTAVENIA</div>
+          <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Všeobecné nastavenia</h1>
+          <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
+            Texty a možnosti zobrazené na verejnej podpornej stránke /support.
+          </p>
+        </>
+      )}
 
       <form
         onSubmit={handleSave}

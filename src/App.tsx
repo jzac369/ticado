@@ -26,6 +26,9 @@ import { ProfilePage } from './pages/Profile';
 import { LiveChatInboxPage } from './pages/LiveChatInbox';
 import { GeneralSettingsPage } from './pages/GeneralSettings';
 import { KbArticlesSettingsPage } from './pages/KbArticlesSettings';
+import { SupportContentSettingsPage } from './pages/SupportContentSettings';
+import { SupportPageSettingsPage } from './pages/SupportPageSettings';
+import { AssignmentSettingsPage } from './pages/AssignmentSettings';
 
 function App() {
   return (
@@ -165,6 +168,30 @@ function App() {
               element={
                 <AgentOnlyRoute>
                   <KbArticlesSettingsPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="support-content"
+              element={
+                <AgentOnlyRoute>
+                  <SupportContentSettingsPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="support-page-settings"
+              element={
+                <AgentOnlyRoute>
+                  <SupportPageSettingsPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="assignment-settings"
+              element={
+                <AgentOnlyRoute>
+                  <AssignmentSettingsPage />
                 </AgentOnlyRoute>
               }
             />

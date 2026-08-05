@@ -2,15 +2,11 @@ import { useNavigate } from 'react-router-dom';
 import { Icon, type IconName } from '../components/Icon';
 
 const CARDS: { title: string; desc: string; to: string; icon: IconName }[] = [
-  { title: 'IT technici', desc: 'Meno, pozícia a email technikov, priraďovanie tiketov.', to: '/agents', icon: 'tool' },
-  { title: 'Šablóny odpovedí', desc: 'Preddefinované texty pre rýchle odpovede.', to: '/templates', icon: 'list' },
-  { title: 'Znalostná báza', desc: 'Články zobrazené v sekcii "Najčastejšie riešené témy" na /support.', to: '/kb-articles', icon: 'lightbulb' },
-  { title: 'Banner pre klientov', desc: 'Oznámenie o odstávke alebo dôležitej správe.', to: '/announcement', icon: 'megaphone' },
-  { title: 'Analytika technikov', desc: 'Reakčný čas a rebríček výkonnosti.', to: '/analytics', icon: 'barChart' },
+  { title: 'IT technici', desc: 'Meno, pozícia a email technikov.', to: '/agents', icon: 'tool' },
   { title: 'Zákazníci', desc: 'Zoznam firiem a ich kolegov (klientske účty).', to: '/customers', icon: 'users' },
-  { title: 'Live chat', desc: 'Konverzácie z podpornej stránky, zapnutie/vypnutie widgetu.', to: '/livechat', icon: 'message' },
-  { title: 'Všeobecné nastavenia', desc: 'Uvítacie texty a hodiny podpory na /support.', to: '/general-settings', icon: 'layers' },
-  { title: 'Môj profil', desc: 'Prepojenie vášho účtu s technikom.', to: '/profile', icon: 'user' },
+  { title: 'Obsah podpory', desc: 'Šablóny odpovedí a znalostná báza pre klientov.', to: '/support-content', icon: 'list' },
+  { title: 'Podporná stránka', desc: 'Texty, hodiny, live chat a banner na /support.', to: '/support-page-settings', icon: 'layers' },
+  { title: 'Prideľovanie tiketov', desc: 'Manuálne alebo automatické priradenie technika.', to: '/assignment-settings', icon: 'ticket' },
 ];
 
 export function SettingsHubPage() {

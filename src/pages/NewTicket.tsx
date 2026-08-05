@@ -1,7 +1,8 @@
 import { useEffect, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createTicket } from '../firebase/tickets';
-import { subscribeCustomers, createCustomer } from '../firebase/customers';
+import { subscribeCustomers } from '../firebase/customers';
+import { subscribeGeneralSettings, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
 import type { Customer, TicketChannel, TicketPriority } from '../types';
 import { CHANNEL_LABELS, PRIORITY_LABELS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -21,7 +22,6 @@ export function NewTicketPage() {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerId, setCustomerId] = useState('');
-  const [newCustomerName, setNewCustomerName] = useState('');
   const [category, setCategory] = useState('');
   const [channel, setChannel] = useState<TicketChannel>('web');
   const [priority, setPriority] = useState<TicketPriority>('normalna');
@@ -30,15 +30,14 @@ export function NewTicketPage() {
   const [requesterName, setRequesterName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [settings, setSettings] = useState<GeneralSettings>(DEFAULT_GENERAL_SETTINGS);
 
   useEffect(() => subscribeCustomers(setCustomers), []);
+  useEffect(() => subscribeGeneralSettings(setSettings), []);
 
   useEffect(() => {
-    if (user?.email && !requesterName) {
-      setRequesterName(user.email.split('@')[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
+    if (!customerId && customers.length > 0) setCustomerId(customers[0].id);
+  }, [customers, customerId]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -49,15 +48,9 @@ export function NewTicketPage() {
     }
     setSubmitting(true);
     try {
-      let finalCustomerId = isClient && profile?.role === 'klient' ? profile.customerId : customerId;
-      let finalCustomerName =
+      const finalCustomerId = isClient && profile?.role === 'klient' ? profile.customerId : customerId;
+      const finalCustomerName =
         isClient && profile?.role === 'klient' ? profile.customerName : customers.find((c) => c.id === customerId)?.name ?? '';
-
-      if (!isClient && !finalCustomerId && newCustomerName.trim()) {
-        const ref = await createCustomer({ name: newCustomerName.trim() });
-        finalCustomerId = ref.id;
-        finalCustomerName = newCustomerName.trim();
-      }
 
       const { id } = await createTicket({
         subject: subject.trim(),
@@ -69,7 +62,7 @@ export function NewTicketPage() {
         category: category || 'Iné',
         priority,
         channel: isClient ? 'web' : channel,
-        autoAssign: !isClient,
+        assignmentStrategy: isClient ? undefined : settings.assignmentStrategy,
       });
       navigate(`/tickets/${id}`);
     } catch (err) {
@@ -95,28 +88,13 @@ export function NewTicketPage() {
               {isClient && profile?.role === 'klient' ? (
                 <input value={profile.customerName} disabled style={{ ...inputStyle, color: 'var(--color-text-faint)' }} />
               ) : (
-                <>
-                  <select
-                    value={customerId}
-                    onChange={(e) => setCustomerId(e.target.value)}
-                    style={inputStyle}
-                  >
-                    <option value="">— Nová firma —</option>
-                    {customers.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  {!customerId && (
-                    <input
-                      value={newCustomerName}
-                      onChange={(e) => setNewCustomerName(e.target.value)}
-                      placeholder="Názov novej firmy"
-                      style={{ ...inputStyle, marginTop: 8 }}
-                    />
-                  )}
-                </>
+                <select value={customerId} onChange={(e) => setCustomerId(e.target.value)} style={inputStyle}>
+                  {customers.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
               )}
             </Field>
             <Field label="Kategória">
@@ -166,9 +144,14 @@ export function NewTicketPage() {
           </div>
         </Section>
 
-        <Section title="2. Obsah tiketu" subtitle="Popíšte problém tak, aby sa dal začať riešiť bez ďalšieho vypytovania.">
+        <Section title="2. Obsah tiketu" subtitle="Detailne popíšte problém.">
           <Field label="Meno žiadateľa">
-            <input value={requesterName} onChange={(e) => setRequesterName(e.target.value)} style={inputStyle} />
+            <input
+              value={requesterName}
+              onChange={(e) => setRequesterName(e.target.value)}
+              placeholder="Meno a priezvisko žiadateľa"
+              style={inputStyle}
+            />
           </Field>
 
           <div style={{ marginTop: 14 }}>

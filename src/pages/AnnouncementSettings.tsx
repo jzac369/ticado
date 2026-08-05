@@ -8,7 +8,7 @@ const TONE_LABELS: Record<AnnouncementTone, string> = {
   danger: 'Kritické (červené)',
 };
 
-export function AnnouncementSettingsPage() {
+export function AnnouncementSettingsPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [enabled, setEnabled] = useState(false);
   const [message, setMessage] = useState('');
   const [tone, setTone] = useState<AnnouncementTone>('info');
@@ -41,12 +41,16 @@ export function AnnouncementSettingsPage() {
 
   return (
     <div style={{ maxWidth: 640 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NASTAVENIA</div>
-      <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Banner pre klientov</h1>
-      <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Oznámenie o plánovanej odstávke alebo inej dôležitej informácii, zobrazené klientom na ich stránke a vo verejnom
-        formulári.
-      </p>
+      {!embedded && (
+        <>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NASTAVENIA</div>
+          <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Banner pre klientov</h1>
+          <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
+            Oznámenie o plánovanej odstávke alebo inej dôležitej informácii, zobrazené klientom na ich stránke a vo
+            verejnom formulári.
+          </p>
+        </>
+      )}
 
       <form
         onSubmit={handleSave}

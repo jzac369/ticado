@@ -19,6 +19,7 @@ import {
 import { db } from './config';
 import { uploadAttachments } from './attachments';
 import type { Attachment, Ticket, TicketMessage, TicketPriority, TicketStatus, ActivityEntry } from '../types';
+import type { AssignmentStrategy } from './generalSettings';
 
 export interface TicketLookup {
   ticketId: string;
@@ -95,9 +96,13 @@ async function nextTicketCode(): Promise<string> {
   return `TIK${String(nextNumber).padStart(6, '0')}`;
 }
 
-async function nextRoundRobinAgent(): Promise<string | null> {
+async function activeAgentNames(): Promise<string[]> {
   const agentsSnap = await getDocs(query(collection(db, 'agents'), where('active', '==', true), orderBy('name', 'asc')));
-  const names = agentsSnap.docs.map((d) => d.data().name as string);
+  return agentsSnap.docs.map((d) => d.data().name as string);
+}
+
+async function nextRoundRobinAgent(): Promise<string | null> {
+  const names = await activeAgentNames();
   if (names.length === 0) return null;
 
   const counterRef = doc(db, 'meta', 'assignmentRR');
@@ -109,6 +114,59 @@ async function nextRoundRobinAgent(): Promise<string | null> {
     return next;
   });
   return names[index % names.length];
+}
+
+async function randomAgent(): Promise<string | null> {
+  const names = await activeAgentNames();
+  if (names.length === 0) return null;
+  return names[Math.floor(Math.random() * names.length)];
+}
+
+/**
+ * Picks whoever currently has the fewest open (not closed, not archived)
+ * tickets assigned to them. Deliberately counts client-side over the whole
+ * `tickets` collection rather than a per-agent query, to avoid needing yet
+ * another composite index for what's a small, infrequent lookup at this
+ * app's scale.
+ */
+async function leastAssignedAgent(): Promise<string | null> {
+  const names = await activeAgentNames();
+  if (names.length === 0) return null;
+
+  const ticketsSnap = await getDocs(ticketsCol);
+  const openCounts = new Map<string, number>(names.map((n) => [n, 0]));
+  ticketsSnap.docs.forEach((d) => {
+    const t = d.data() as Ticket;
+    if (t.archived || t.status === 'uzavrety') return;
+    if (t.assignedTo && openCounts.has(t.assignedTo)) {
+      openCounts.set(t.assignedTo, (openCounts.get(t.assignedTo) ?? 0) + 1);
+    }
+  });
+
+  let best = names[0];
+  let bestCount = Infinity;
+  for (const name of names) {
+    const count = openCounts.get(name) ?? 0;
+    if (count < bestCount) {
+      best = name;
+      bestCount = count;
+    }
+  }
+  return best;
+}
+
+async function pickAssignee(strategy: AssignmentStrategy): Promise<string | null> {
+  switch (strategy) {
+    case 'roundRobin':
+      return nextRoundRobinAgent();
+    case 'random':
+      return randomAgent();
+    case 'leastAssigned':
+      return leastAssignedAgent();
+    case 'manual':
+    default:
+      return null;
+  }
 }
 
 export interface NewTicketInput {
@@ -123,22 +181,23 @@ export interface NewTicketInput {
   priority: TicketPriority;
   channel: Ticket['channel'];
   files?: File[];
-  /** Round-robin auto-assign to an active technician. Only used for the
-   * authenticated internal flow - the public intake form always leaves
-   * tickets unassigned. */
-  autoAssign?: boolean;
+  /** Auto-assign a technician per the configured strategy (Nastavenia ->
+   * Prideľovanie tiketov). Only used for the authenticated internal flow -
+   * the public intake form and client-created tickets always leave tickets
+   * unassigned by not passing this at all. */
+  assignmentStrategy?: AssignmentStrategy;
 }
 
 export async function createTicket(input: NewTicketInput) {
   const code = await nextTicketCode();
   let assignedTo: string | null = null;
-  if (input.autoAssign) {
+  if (input.assignmentStrategy && input.assignmentStrategy !== 'manual') {
     try {
-      assignedTo = await nextRoundRobinAgent();
+      assignedTo = await pickAssignee(input.assignmentStrategy);
     } catch (err) {
       // Auto-assignment is a convenience, not a requirement - a ticket
       // should still be created (unassigned) even if this lookup fails.
-      console.error('Round-robin assignment failed, creating ticket unassigned', err);
+      console.error('Auto-assignment failed, creating ticket unassigned', err);
     }
   }
 

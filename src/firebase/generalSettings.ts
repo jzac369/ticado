@@ -1,6 +1,31 @@
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from './config';
 
+/**
+ * How a newly created ticket picks a technician (only applies to tickets
+ * created by an agent for someone else - client and public submissions
+ * always stay unassigned regardless of this setting):
+ * - manual: nobody is auto-assigned, an agent picks later.
+ * - roundRobin: cycles through active technicians in order (1,2,3,4,1,2…).
+ * - random: picks a random active technician.
+ * - leastAssigned: picks whoever currently has the fewest open tickets.
+ */
+export type AssignmentStrategy = 'manual' | 'roundRobin' | 'random' | 'leastAssigned';
+
+export const ASSIGNMENT_STRATEGY_LABELS: Record<AssignmentStrategy, string> = {
+  manual: 'Manuálne',
+  roundRobin: 'Automaticky, postupne (1, 2, 3, 4…)',
+  random: 'Automaticky, náhodne',
+  leastAssigned: 'Automaticky, podľa najnižšieho počtu otvorených tiketov',
+};
+
+export const ASSIGNMENT_STRATEGY_HINTS: Record<AssignmentStrategy, string> = {
+  manual: 'Nový tiket ostane nepridelený, technika vyberie agent ručne.',
+  roundRobin: 'Každý nový tiket dostane ďalší technik v poradí, striedavo dokola.',
+  random: 'Technik sa pre každý nový tiket vyberie náhodne spomedzi aktívnych.',
+  leastAssigned: 'Tiket dostane technik, ktorý má aktuálne najmenej otvorených tiketov - rovnomerné rozloženie záťaže.',
+};
+
 export interface GeneralSettings {
   liveChatEnabled: boolean;
   chatSoundEnabled: boolean;
@@ -15,6 +40,7 @@ export interface GeneralSettings {
   supportOpenTo: string;
   supportPhone: string;
   supportFooterText: string;
+  assignmentStrategy: AssignmentStrategy;
 }
 
 export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
@@ -30,6 +56,7 @@ export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   supportOpenTo: '16:00',
   supportPhone: '',
   supportFooterText: 'Technický Service desk pre zamestnancov spoločnosti RONA',
+  assignmentStrategy: 'roundRobin',
 };
 
 const ref = doc(db, 'settings', 'general');

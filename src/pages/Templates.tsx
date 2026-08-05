@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { subscribeTemplates, createTemplate, updateTemplate, deleteTemplate, type ReplyTemplate } from '../firebase/templates';
 
-export function TemplatesPage() {
+export function TemplatesPage({ embedded = false }: { embedded?: boolean } = {}) {
   const [templates, setTemplates] = useState<ReplyTemplate[]>([]);
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -35,11 +35,15 @@ export function TemplatesPage() {
 
   return (
     <div>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NASTAVENIA</div>
-      <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Šablóny odpovedí</h1>
-      <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
-        Preddefinované texty, ktoré si agenti môžu rýchlo vložiť do odpovede na tikete.
-      </p>
+      {!embedded && (
+        <>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NASTAVENIA</div>
+          <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Šablóny odpovedí</h1>
+          <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
+            Preddefinované texty, ktoré si agenti môžu rýchlo vložiť do odpovede na tikete.
+          </p>
+        </>
+      )}
 
       <form
         onSubmit={handleAdd}
