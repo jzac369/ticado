@@ -84,7 +84,7 @@ export function LoginPage() {
             na jednom mieste.
           </h1>
           <p style={{ fontSize: 16, opacity: 0.85, maxWidth: 420, margin: 0 }}>
-            Správa servisných požiadaviek, interných požiadaviek a komunikácia s IT oddelením na jednom mieste.
+            Správa servisných a interných požiadaviek a komunikácia s IT oddelením na jednom mieste.
           </p>
         </div>
 
