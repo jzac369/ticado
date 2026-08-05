@@ -154,6 +154,14 @@ service cloud.firestore {
       allow write: if isAgent();
     }
 
+    // Internal agent-to-agent messages - only sender and recipient may read
+    // a given message; only the recipient may mark it read.
+    match /internalMessages/{messageId} {
+      allow read: if isAgent() && (resource.data.toEmail == myEmail() || resource.data.fromEmail == myEmail());
+      allow create: if isAgent() && request.resource.data.fromEmail == myEmail();
+      allow update: if isAgent() && resource.data.toEmail == myEmail();
+    }
+
     // Public maintenance/outage announcement banner - shown to anyone
     // (clients and the public intake form), editable only by agents.
     match /settings/{settingId} {

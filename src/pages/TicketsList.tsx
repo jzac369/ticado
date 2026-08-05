@@ -1,6 +1,15 @@
 import { useMemo, useState, useEffect, type CSSProperties, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { subscribeTickets, subscribeRecentMessages } from '../firebase/tickets';
+import {
+  subscribeTickets,
+  subscribeRecentMessages,
+  updateTicketStatus,
+  updateTicketPriority,
+  updateTicketAssignment,
+  archiveTicket,
+} from '../firebase/tickets';
+import { subscribeAgents, type Agent } from '../firebase/agents';
+import { useAuth } from '../contexts/AuthContext';
 import type { Ticket, TicketMessage, TicketPriority, TicketStatus } from '../types';
 import { PRIORITY_LABELS, STATUS_LABELS } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/Badges';
@@ -20,6 +29,7 @@ function formatDate(ticket: Ticket, field: 'createdAt' | 'closedAt') {
 const PAGE_SIZES = [10, 25, 50, 100];
 
 export function TicketsListPage() {
+  const { user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -34,6 +44,9 @@ export function TicketsListPage() {
   const [page, setPage] = useState(1);
   const [quickFilter, setQuickFilter] = useState<'all' | 'open' | 'closed'>('all');
   const [messages, setMessages] = useState<TicketMessage[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   useEffect(() => {
     const unsub = subscribeTickets((data) => {
@@ -44,6 +57,7 @@ export function TicketsListPage() {
   }, []);
 
   useEffect(() => subscribeRecentMessages(setMessages, 500), []);
+  useEffect(() => subscribeAgents(setAgents), []);
 
   const messageTextByTicket = useMemo(() => {
     const map = new Map<string, string>();
@@ -113,6 +127,72 @@ export function TicketsListPage() {
     setDateTo('');
     setQuickFilter('all');
     setPage(1);
+  }
+
+  const allPagedSelected = paged.length > 0 && paged.every((t) => selected.has(t.id));
+
+  function toggleSelectAllOnPage() {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (allPagedSelected) {
+        paged.forEach((t) => next.delete(t.id));
+      } else {
+        paged.forEach((t) => next.add(t.id));
+      }
+      return next;
+    });
+  }
+
+  function toggleSelectOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const actorName = user?.email?.split('@')[0] ?? 'Agent';
+
+  async function bulkSetStatus(status: TicketStatus) {
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selected].map((id) => updateTicketStatus(id, status, actorName)));
+      setSelected(new Set());
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkSetPriority(priority: TicketPriority) {
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selected].map((id) => updateTicketPriority(id, priority, actorName)));
+      setSelected(new Set());
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkAssign(assignee: string) {
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selected].map((id) => updateTicketAssignment(id, assignee || null, actorName)));
+      setSelected(new Set());
+    } finally {
+      setBulkBusy(false);
+    }
+  }
+
+  async function bulkArchive() {
+    if (!window.confirm(`Naozaj chcete archivovať ${selected.size} tiketov?`)) return;
+    setBulkBusy(true);
+    try {
+      await Promise.all([...selected].map((id) => archiveTicket(id, actorName)));
+      setSelected(new Set());
+    } finally {
+      setBulkBusy(false);
+    }
   }
 
   function exportCsv() {
@@ -301,6 +381,87 @@ export function TicketsListPage() {
         {filtered.length} tiketov · zobrazené {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, filtered.length)}
       </div>
 
+      {selected.size > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            flexWrap: 'wrap',
+            padding: '10px 14px',
+            marginBottom: 10,
+            background: 'var(--color-primary-bg)',
+            border: '1px solid var(--color-primary-border)',
+            borderRadius: 'var(--radius-md)',
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-primary)' }}>
+            {selected.size} vybraných
+          </span>
+          <select
+            defaultValue=""
+            disabled={bulkBusy}
+            onChange={(e) => {
+              if (e.target.value) bulkSetStatus(e.target.value as TicketStatus);
+              e.target.value = '';
+            }}
+            style={{ ...selectStyle, width: 'auto', height: 32 }}
+          >
+            <option value="" disabled>
+              Zmeniť stav…
+            </option>
+            {Object.entries(STATUS_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            defaultValue=""
+            disabled={bulkBusy}
+            onChange={(e) => {
+              if (e.target.value) bulkSetPriority(e.target.value as TicketPriority);
+              e.target.value = '';
+            }}
+            style={{ ...selectStyle, width: 'auto', height: 32 }}
+          >
+            <option value="" disabled>
+              Zmeniť prioritu…
+            </option>
+            {Object.entries(PRIORITY_LABELS).map(([k, v]) => (
+              <option key={k} value={k}>
+                {v}
+              </option>
+            ))}
+          </select>
+          <select
+            defaultValue=""
+            disabled={bulkBusy}
+            onChange={(e) => {
+              bulkAssign(e.target.value);
+              e.target.value = '';
+            }}
+            style={{ ...selectStyle, width: 'auto', height: 32 }}
+          >
+            <option value="" disabled>
+              Priradiť technikovi…
+            </option>
+            <option value="">— Zrušiť priradenie —</option>
+            {agents.map((a) => (
+              <option key={a.id} value={a.name}>
+                {a.name}
+              </option>
+            ))}
+          </select>
+          <button onClick={bulkArchive} disabled={bulkBusy} style={{ ...secondaryBtn, height: 32 }}>
+            Archivovať
+          </button>
+          <button onClick={() => setSelected(new Set())} style={{ ...secondaryBtn, height: 32, marginLeft: 'auto' }}>
+            Zrušiť výber
+          </button>
+        </div>
+      )}
+
       <div
         style={{
           background: 'var(--color-surface)',
@@ -312,6 +473,9 @@ export function TicketsListPage() {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
           <thead>
             <tr style={{ textAlign: 'left', background: 'var(--color-surface-2)' }}>
+              <th style={{ padding: '10px 14px', width: 1 }}>
+                <input type="checkbox" checked={allPagedSelected} onChange={toggleSelectAllOnPage} />
+              </th>
               {['Tiket', 'Predmet a firma', 'Stav', 'Priorita', 'Pridelené', 'Vytvorený', 'Uzavretý', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 14px', fontSize: 11.5, fontWeight: 700, color: 'var(--color-text-faint)' }}>
                   {h}
@@ -322,14 +486,14 @@ export function TicketsListPage() {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   Načítavam tikety…
                 </td>
               </tr>
             )}
             {!loading && paged.length === 0 && (
               <tr>
-                <td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
+                <td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>
                   Žiadne tikety nezodpovedajú filtru.
                 </td>
               </tr>
@@ -342,9 +506,16 @@ export function TicketsListPage() {
                   borderTop: '1px solid var(--color-border)',
                   cursor: 'pointer',
                   borderLeft: t.priority === 'kriticka' ? '3px solid var(--color-danger)' : '3px solid transparent',
-                  background: t.priority === 'kriticka' ? 'rgba(220,38,38,0.05)' : undefined,
+                  background: selected.has(t.id)
+                    ? 'var(--color-primary-bg)'
+                    : t.priority === 'kriticka'
+                      ? 'rgba(220,38,38,0.05)'
+                      : undefined,
                 }}
               >
+                <td style={{ padding: '12px 14px' }} onClick={(e) => e.stopPropagation()}>
+                  <input type="checkbox" checked={selected.has(t.id)} onChange={() => toggleSelectOne(t.id)} />
+                </td>
                 <td style={{ padding: '12px 14px', fontWeight: 700, color: 'var(--color-primary)' }}>{t.code}</td>
                 <td style={{ padding: '12px 14px' }}>
                   <div style={{ fontWeight: 600 }}>{t.subject}</div>

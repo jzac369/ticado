@@ -59,6 +59,16 @@ export const DEFAULT_GENERAL_SETTINGS: GeneralSettings = {
   assignmentStrategy: 'roundRobin',
 };
 
+/** Whether the support desk is inside its configured open hours right now. */
+export function isSupportOpenNow(settings: GeneralSettings): boolean {
+  const now = new Date();
+  if (!settings.supportOpenDays.includes(now.getDay())) return false;
+  const [fromH, fromM] = settings.supportOpenFrom.split(':').map(Number);
+  const [toH, toM] = settings.supportOpenTo.split(':').map(Number);
+  const minutesNow = now.getHours() * 60 + now.getMinutes();
+  return minutesNow >= fromH * 60 + fromM && minutesNow <= toH * 60 + toM;
+}
+
 const ref = doc(db, 'settings', 'general');
 
 export function subscribeGeneralSettings(callback: (s: GeneralSettings) => void) {

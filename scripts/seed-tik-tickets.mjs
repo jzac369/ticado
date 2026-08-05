@@ -115,7 +115,8 @@ async function main() {
     const firstName = pick(FIRST_NAMES);
     const lastName = pick(LAST_NAMES);
     const requesterName = `${firstName} ${lastName}`;
-    const requesterEmail = `${firstName.toLowerCase()}.${lastName.toLowerCase()}@rona.sk`;
+    const stripDiacritics = (s) => s.normalize('NFD').replace(new RegExp('[̀-ͯ]', 'g'), '');
+    const requesterEmail = `${stripDiacritics(firstName.toLowerCase())}.${stripDiacritics(lastName.toLowerCase())}@rona.sk`;
     const priority = pick(PRIORITIES);
     const status = weightedStatus();
     const assignedTo = status === 'otvoreny' && Math.random() < 0.3 ? null : pick(agents).name;

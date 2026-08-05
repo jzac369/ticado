@@ -1,5 +1,6 @@
 import { addDoc, collection, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc, type Timestamp } from 'firebase/firestore';
 import { db } from './config';
+import type { Attachment } from '../types';
 
 export type LiveChatStatus = 'otvoreny' | 'uzavrety';
 
@@ -14,13 +15,29 @@ export interface LiveChat {
   lastMessagePreview?: string;
   lastMessageAuthor?: 'visitor' | 'agent';
   agentUnread?: boolean;
+  /** Set true once the agent has replied, cleared once the visitor re-opens
+   * the widget - drives the unread badge on the visitor's closed bubble. */
+  visitorUnread?: boolean;
+  /** Name of the agent who clicked "Prevziať" - shown in the inbox list so
+   * multiple agents online at once don't step on each other. */
+  claimedBy?: string;
+  /** True if the chat was started while live chat was disabled or outside
+   * support hours - the visitor left a message instead of chatting live. */
+  offline?: boolean;
+  /** Set once "Previesť na tiket" is used, so it only ever converts once. */
+  convertedTicketCode?: string;
+  visitorTyping?: boolean;
+  visitorTypingAt?: Timestamp | null;
+  agentTyping?: boolean;
+  agentTypingAt?: Timestamp | null;
 }
 
 export interface ChatMessage {
   id: string;
-  author: 'visitor' | 'agent';
+  author: 'visitor' | 'agent' | 'system';
   authorName: string;
   body: string;
+  attachments?: Attachment[];
   createdAt: Timestamp | null;
 }
 
@@ -46,7 +63,14 @@ export function subscribeChatMessages(chatId: string, callback: (messages: ChatM
   });
 }
 
-export async function createLiveChat(visitorName: string, visitorEmail: string, ticketCode?: string) {
+const WELCOME_MESSAGE = 'Ďakujeme za správu! Ozveme sa vám čo najskôr.';
+
+export async function createLiveChat(
+  visitorName: string,
+  visitorEmail: string,
+  ticketCode?: string,
+  offline = false,
+) {
   const ref = await addDoc(chatsCol, {
     visitorName,
     visitorEmail: visitorEmail.trim().toLowerCase(),
@@ -57,28 +81,66 @@ export async function createLiveChat(visitorName: string, visitorEmail: string, 
     lastMessagePreview: '',
     lastMessageAuthor: 'visitor',
     agentUnread: false,
+    visitorUnread: false,
+    offline,
   });
+  if (!offline) {
+    await addDoc(collection(db, 'liveChats', ref.id, 'messages'), {
+      author: 'system',
+      authorName: 'Systém',
+      body: WELCOME_MESSAGE,
+      createdAt: serverTimestamp(),
+    });
+  }
   return ref.id;
 }
 
-export async function sendChatMessage(chatId: string, message: { author: 'visitor' | 'agent'; authorName: string; body: string }) {
+export async function sendChatMessage(
+  chatId: string,
+  message: { author: 'visitor' | 'agent'; authorName: string; body: string; attachments?: Attachment[] },
+) {
   await addDoc(collection(db, 'liveChats', chatId, 'messages'), {
     author: message.author,
     authorName: message.authorName,
     body: message.body,
+    ...(message.attachments && message.attachments.length > 0 ? { attachments: message.attachments } : {}),
     createdAt: serverTimestamp(),
   });
   await updateDoc(doc(db, 'liveChats', chatId), {
     lastMessageAt: serverTimestamp(),
-    lastMessagePreview: message.body.slice(0, 120),
+    lastMessagePreview: message.body.slice(0, 120) || (message.attachments?.length ? '📎 Príloha' : ''),
     lastMessageAuthor: message.author,
     status: 'otvoreny',
     agentUnread: message.author === 'visitor',
+    visitorUnread: message.author === 'agent',
+    ...(message.author === 'visitor' ? { visitorTyping: false } : { agentTyping: false }),
   });
 }
 
 export async function markChatRead(chatId: string) {
   await updateDoc(doc(db, 'liveChats', chatId), { agentUnread: false });
+}
+
+export async function markChatReadByVisitor(chatId: string) {
+  await updateDoc(doc(db, 'liveChats', chatId), { visitorUnread: false });
+}
+
+export async function setTyping(chatId: string, who: 'visitor' | 'agent', typing: boolean) {
+  const field = who === 'visitor' ? 'visitorTyping' : 'agentTyping';
+  const atField = who === 'visitor' ? 'visitorTypingAt' : 'agentTypingAt';
+  await updateDoc(doc(db, 'liveChats', chatId), { [field]: typing, [atField]: serverTimestamp() });
+}
+
+export async function claimChat(chatId: string, agentName: string) {
+  await updateDoc(doc(db, 'liveChats', chatId), { claimedBy: agentName });
+}
+
+export async function releaseChat(chatId: string) {
+  await updateDoc(doc(db, 'liveChats', chatId), { claimedBy: '' });
+}
+
+export async function linkChatToTicket(chatId: string, ticketCode: string) {
+  await updateDoc(doc(db, 'liveChats', chatId), { convertedTicketCode: ticketCode, ticketCode });
 }
 
 export async function closeLiveChat(chatId: string) {

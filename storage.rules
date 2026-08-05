@@ -8,5 +8,12 @@ service firebase.storage {
       // creating, at the same trust level as public ticket creation itself.
       allow write: if request.resource.size < 50 * 1024 * 1024;
     }
+
+    // Live chat attachments - same anonymous-write trust level as ticket
+    // attachments above, since chat visitors are unauthenticated too.
+    match /liveChats/{chatId}/{fileName} {
+      allow read: if true;
+      allow write: if request.resource.size < 50 * 1024 * 1024;
+    }
   }
 }

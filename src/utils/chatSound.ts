@@ -1,4 +1,25 @@
 let ctx: AudioContext | null = null;
+let unlocked = false;
+
+/**
+ * Browsers keep a freshly-created AudioContext suspended until a real user
+ * gesture unlocks it - resume() called later from a Firestore snapshot
+ * callback (no gesture in the call stack) silently does nothing, so a chat
+ * ding could be scheduled but never actually heard. Call this once at app
+ * startup to unlock audio on the visitor's first click/keypress, well
+ * before any notification sound needs to play.
+ */
+export function unlockAudioOnFirstInteraction() {
+  if (unlocked || typeof document === 'undefined') return;
+  const events = ['pointerdown', 'keydown', 'touchstart'] as const;
+  const handler = () => {
+    if (!ctx) ctx = new AudioContext();
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    unlocked = true;
+    events.forEach((e) => document.removeEventListener(e, handler));
+  };
+  events.forEach((e) => document.addEventListener(e, handler));
+}
 
 function playTones(tones: { freq: number; start: number }[]) {
   try {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { createTicket } from '../firebase/tickets';
 import { subscribeCustomers } from '../firebase/customers';
-import { subscribeGeneralSettings, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
+import { subscribeGeneralSettings, isSupportOpenNow, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
 import { subscribeKbArticles, type KbArticle } from '../firebase/kbArticles';
 import type { Customer, TicketPriority } from '../types';
 import { PRIORITY_LABELS } from '../types';
@@ -59,14 +59,7 @@ export function PublicNewTicketPage() {
   useEffect(() => subscribeGeneralSettings(setSettings), []);
   useEffect(() => subscribeKbArticles(setKbArticles), []);
 
-  const isOpenNow = useMemo(() => {
-    const now = new Date();
-    if (!settings.supportOpenDays.includes(now.getDay())) return false;
-    const [fromH, fromM] = settings.supportOpenFrom.split(':').map(Number);
-    const [toH, toM] = settings.supportOpenTo.split(':').map(Number);
-    const minutesNow = now.getHours() * 60 + now.getMinutes();
-    return minutesNow >= fromH * 60 + fromM && minutesNow <= toH * 60 + toM;
-  }, [settings]);
+  const isOpenNow = useMemo(() => isSupportOpenNow(settings), [settings]);
 
   function set<K extends keyof ReturnType<typeof emptyForm>>(key: K, value: ReturnType<typeof emptyForm>[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -253,56 +246,59 @@ export function PublicNewTicketPage() {
                   <div style={{ fontSize: 11.5, color: 'var(--color-text-muted)', marginTop: 3 }}>Dostupné počas prevádzkových hodín</div>
                 </InfoStripItem>
               )}
-
-              <InfoStripItem icon="lightbulb" label="Najčastejšie riešené témy">
-                <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)' }}>Pozrite si tipy a riešenia</div>
-                <button onClick={() => setView('knowledge')} style={inlineLinkStyle}>
-                  Znalostná báza →
-                </button>
-              </InfoStripItem>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: 16 }}>
-              <div style={panelStyle}>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Ako to funguje</div>
-                <div style={{ display: 'flex', gap: 10 }}>
-                  {HOW_IT_WORKS.map((step, i) => (
-                    <div key={step.title} style={{ display: 'flex', alignItems: 'flex-start', flex: 1, gap: 6 }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                          <span style={stepIconWrap}>
-                            <Icon name={step.icon} size={16} />
-                          </span>
-                          <span style={stepNumber}>{i + 1}</span>
-                          <span style={{ fontWeight: 700, fontSize: 13 }}>{step.title}</span>
-                        </div>
-                        <div style={{ fontSize: 11.5, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>{step.desc}</div>
-                      </div>
-                      {i < HOW_IT_WORKS.length - 1 && (
-                        <Icon name="chevronRight" size={16} style={{ color: 'var(--color-text-faint)', marginTop: 12, flexShrink: 0 }} />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div style={panelStyle}>
-                <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 14 }}>Obľúbené články / Znalostná báza</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {kbArticles.slice(0, 3).map((a) => (
-                    <KbRow key={a.id} article={a} />
-                  ))}
-                  {kbArticles.length === 0 && (
-                    <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)' }}>Zatiaľ žiadne články.</div>
-                  )}
-                </div>
+            <div style={{ ...panelStyle, marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>Obľúbené články / Znalostná báza</div>
                 {kbArticles.length > 0 && (
-                  <button onClick={() => setView('knowledge')} style={{ ...inlineLinkStyle, marginTop: 10 }}>
+                  <button onClick={() => setView('knowledge')} style={inlineLinkStyle}>
                     Zobraziť všetky články →
                   </button>
                 )}
               </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {kbArticles.slice(0, 3).map((a) => (
+                  <KbRow key={a.id} article={a} />
+                ))}
+                {kbArticles.length === 0 && (
+                  <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)' }}>Zatiaľ žiadne články.</div>
+                )}
+              </div>
             </div>
+
+            <div style={panelStyle}>
+              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 18 }}>Ako to funguje</div>
+              <div style={{ display: 'flex', gap: 24, justifyContent: 'space-between' }}>
+                {HOW_IT_WORKS.map((step, i) => (
+                  <div key={step.title} style={{ display: 'flex', alignItems: 'flex-start', flex: 1, gap: 16 }}>
+                    <div style={{ flex: 1, textAlign: 'center' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                        <span style={{ position: 'relative' }}>
+                          <span style={stepIconWrap}>
+                            <Icon name={step.icon} size={18} />
+                          </span>
+                          <span style={{ ...stepNumber, position: 'absolute', top: -4, right: -4 }}>{i + 1}</span>
+                        </span>
+                        <span style={{ fontWeight: 700, fontSize: 13.5 }}>{step.title}</span>
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5, maxWidth: 220, margin: '0 auto' }}>
+                        {step.desc}
+                      </div>
+                    </div>
+                    {i < HOW_IT_WORKS.length - 1 && (
+                      <Icon name="chevronRight" size={18} style={{ color: 'var(--color-text-faint)', marginTop: 16, flexShrink: 0 }} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {settings.liveChatEnabled && (
+              <div style={{ marginTop: 16 }}>
+                <LiveChatWidget />
+              </div>
+            )}
           </>
         )}
 
@@ -590,8 +586,6 @@ export function PublicNewTicketPage() {
           {settings.supportFooterText}
         </div>
       )}
-
-      {settings.liveChatEnabled && <LiveChatWidget />}
     </div>
   );
 }

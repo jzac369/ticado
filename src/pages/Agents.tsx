@@ -1,12 +1,72 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { subscribeAgents, createAgent, updateAgent, deleteAgent, type Agent } from '../firebase/agents';
 import { grantAgentAccess, checkAgentAccess } from '../firebase/allowlist';
+import { subscribeTickets } from '../firebase/tickets';
 import { useAuth } from '../contexts/AuthContext';
+import { STATUS_LABELS, PRIORITY_LABELS, type Ticket } from '../types';
+
+function fmtDate(ts: Ticket['createdAt']) {
+  if (!ts) return '';
+  return ts.toDate().toLocaleString('sk-SK', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function fmtDuration(ms: number) {
+  if (!Number.isFinite(ms) || ms <= 0) return '—';
+  const hours = ms / (60 * 60 * 1000);
+  if (hours < 24) return `${hours.toFixed(1)} h`;
+  return `${(hours / 24).toFixed(1)} d`;
+}
+
+function downloadAgentReport(agent: Agent, tickets: Ticket[]) {
+  const mine = tickets.filter((t) => t.assignedTo === agent.name && !t.archived);
+  const closed = mine.filter((t) => t.status === 'uzavrety' && t.closedAt && t.createdAt);
+  const avgMs = closed.length
+    ? closed.reduce((sum, t) => sum + (t.closedAt!.toMillis() - t.createdAt!.toMillis()), 0) / closed.length
+    : 0;
+  const byPriority = (['nizka', 'normalna', 'vysoka', 'kriticka'] as const).map(
+    (p) => `${PRIORITY_LABELS[p]}: ${mine.filter((t) => t.priority === p).length}`,
+  );
+
+  const escape = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  const rows: string[][] = [
+    ['Report technika', agent.name],
+    ['Pozícia', agent.position || '—'],
+    ['Email', agent.email || '—'],
+    ['Vygenerované', new Date().toLocaleString('sk-SK')],
+    [],
+    ['Spolu tiketov', String(mine.length)],
+    ['Otvorené', String(mine.filter((t) => t.status !== 'uzavrety').length)],
+    ['Uzavreté', String(closed.length)],
+    ['Priemerný čas riešenia', fmtDuration(avgMs)],
+    ['Podľa priority', byPriority.join(' · ')],
+    [],
+    ['Tiket', 'Predmet', 'Firma', 'Stav', 'Priorita', 'Kategória', 'Vytvorený', 'Uzavretý'],
+    ...mine.map((t) => [
+      t.code,
+      t.subject,
+      t.customerName,
+      STATUS_LABELS[t.status],
+      PRIORITY_LABELS[t.priority],
+      t.category,
+      fmtDate(t.createdAt),
+      fmtDate(t.closedAt),
+    ]),
+  ];
+  const csv = rows.map((row) => row.map(escape).join(',')).join('\r\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `report-${agent.name.toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 export function AgentsPage() {
   const { profile } = useAuth();
   const isMaster = profile?.role === 'agent' && profile.master;
   const [agents, setAgents] = useState<Agent[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [access, setAccess] = useState<Record<string, boolean>>({});
   const [name, setName] = useState('');
   const [position, setPosition] = useState('');
@@ -15,6 +75,7 @@ export function AgentsPage() {
   const [editDraft, setEditDraft] = useState<Partial<Agent>>({});
 
   useEffect(() => subscribeAgents(setAgents), []);
+  useEffect(() => subscribeTickets(setTickets), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -192,6 +253,9 @@ export function AgentsPage() {
                         )}
                       </td>
                       <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
+                        <button onClick={() => downloadAgentReport(a, tickets)} style={{ ...actionBtnBase, color: 'var(--color-primary)', border: '1px solid var(--color-primary)' }}>
+                          Stiahnuť report
+                        </button>
                         {isMaster && (
                           <>
                             <button onClick={() => startEdit(a)} style={editBtnStyle}>

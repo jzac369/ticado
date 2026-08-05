@@ -29,6 +29,7 @@ import { KbArticlesSettingsPage } from './pages/KbArticlesSettings';
 import { SupportContentSettingsPage } from './pages/SupportContentSettings';
 import { SupportPageSettingsPage } from './pages/SupportPageSettings';
 import { AssignmentSettingsPage } from './pages/AssignmentSettings';
+import { MessagesPage } from './pages/Messages';
 
 function App() {
   return (
@@ -192,6 +193,14 @@ function App() {
               element={
                 <AgentOnlyRoute>
                   <AssignmentSettingsPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="messages"
+              element={
+                <AgentOnlyRoute>
+                  <MessagesPage />
                 </AgentOnlyRoute>
               }
             />

@@ -6,6 +6,7 @@ import { NotificationBell } from '../components/NotificationBell';
 import { subscribeAgents, type Agent } from '../firebase/agents';
 import { subscribeTickets } from '../firebase/tickets';
 import { subscribeLiveChats, type LiveChat } from '../firebase/livechat';
+import { subscribeMyMessages, type InternalMessage } from '../firebase/messages';
 import { AlertTicker } from '../components/AlertTicker';
 import { Icon, type IconName } from '../components/Icon';
 import type { Ticket } from '../types';
@@ -28,6 +29,7 @@ const agentIcons: IconItem[] = [
   { label: 'Tikety', icon: 'ticket', to: '/tickets' },
   { label: 'Zákazníci', icon: 'users', to: '/customers' },
   { label: 'Live chat', icon: 'message', to: '/livechat' },
+  { label: 'Správy', icon: 'mail', to: '/messages' },
   { label: 'Reporty', icon: 'barChart', to: '/analytics' },
   { label: 'Nastavenia', icon: 'settings', to: '/settings-hub' },
   { label: 'Pomoc', icon: 'book', to: '/legend' },
@@ -64,6 +66,7 @@ export function TopNav() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [chats, setChats] = useState<LiveChat[]>([]);
+  const [messages, setMessages] = useState<InternalMessage[]>([]);
 
   useEffect(() => {
     if (isClient) return;
@@ -77,7 +80,13 @@ export function TopNav() {
     return subscribeLiveChats(setChats);
   }, [isClient]);
 
+  useEffect(() => {
+    if (isClient || !user?.email) return;
+    return subscribeMyMessages(user.email.toLowerCase(), setMessages);
+  }, [isClient, user]);
+
   const hasUnreadChat = chats.some((c) => c.agentUnread);
+  const unreadMessageCount = messages.filter((m) => m.toEmail === user?.email?.toLowerCase() && !m.read).length;
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
@@ -130,12 +139,17 @@ export function TopNav() {
     const scoped =
       profile?.role === 'klient' ? active.filter((t) => t.customerId === profile.customerId) : active;
 
+    const unassignedList = active.filter((t) => !t.assignedTo && t.status !== 'uzavrety');
+    const todayList = scoped.filter((t) => (t.createdAt?.toMillis() ?? 0) >= todayStartMs);
+    const archivedList = tickets.filter((t) => t.archived);
+    const critical = (list: Ticket[]) => list.filter((t) => t.priority === 'kriticka' && t.status !== 'uzavrety').length;
+
     return {
-      my: myTickets.length,
-      all: active.length,
-      unassigned: active.filter((t) => !t.assignedTo && t.status !== 'uzavrety').length,
-      today: scoped.filter((t) => (t.createdAt?.toMillis() ?? 0) >= todayStartMs).length,
-      archived: tickets.filter((t) => t.archived).length,
+      my: { total: myTickets.length, critical: critical(myTickets) },
+      all: { total: active.length, critical: critical(active) },
+      unassigned: { total: unassignedList.length, critical: critical(unassignedList) },
+      today: { total: todayList.length, critical: critical(todayList) },
+      archived: { total: archivedList.length, critical: 0 },
     };
   }, [tickets, profile, user, myAgent]);
 
@@ -160,6 +174,7 @@ export function TopNav() {
           {icons.map((item) => {
             const isChatIcon = item.to === '/livechat';
             const blinking = isChatIcon && hasUnreadChat;
+            const isMessagesIcon = item.to === '/messages';
             return (
               <NavLink
                 key={item.to}
@@ -184,6 +199,25 @@ export function TopNav() {
                   <span
                     style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-danger)' }}
                   />
+                )}
+                {isMessagesIcon && unreadMessageCount > 0 && (
+                  <span
+                    style={{
+                      minWidth: 16,
+                      height: 16,
+                      padding: '0 4px',
+                      borderRadius: 999,
+                      background: 'var(--color-danger)',
+                      color: '#fff',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {unreadMessageCount}
+                  </span>
                 )}
               </NavLink>
             );
@@ -286,7 +320,10 @@ export function TopNav() {
                   color: 'var(--color-text-faint)',
                 }}
               >
-                {counts[tab.countKey]}
+                {counts[tab.countKey].total}
+                {counts[tab.countKey].critical > 0 && (
+                  <span style={{ color: 'var(--color-danger)' }}>+{counts[tab.countKey].critical}</span>
+                )}
               </span>
             )}
           </NavLink>
