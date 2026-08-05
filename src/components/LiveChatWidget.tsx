@@ -19,8 +19,15 @@ const NAME_KEY = 'ticado_livechat_name';
 const TYPING_STALE_MS = 4000;
 const INACTIVITY_NUDGE_MS = 5 * 60 * 1000;
 
-export function LiveChatWidget() {
-  const [open, setOpen] = useState(false);
+export function LiveChatWidget({
+  open,
+  onOpenChange,
+  onUnreadChange,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onUnreadChange?: (unread: boolean) => void;
+}) {
   const [chatId, setChatId] = useState<string | null>(() => localStorage.getItem(STORAGE_KEY));
   const [chat, setChat] = useState<LiveChat | null>(null);
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) ?? '');
@@ -69,6 +76,10 @@ export function LiveChatWidget() {
   useEffect(() => {
     if (open) panelRef.current?.scrollIntoView({ behavior: 'auto', block: 'start' });
   }, [open]);
+
+  useEffect(() => {
+    onUnreadChange?.(Boolean(chat?.visitorUnread));
+  }, [chat?.visitorUnread, onUnreadChange]);
 
   const ended = chat?.status === 'uzavrety';
   const agentTypingRecently =
@@ -142,46 +153,7 @@ export function LiveChatWidget() {
     setTicketCode('');
   }
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        style={{
-          position: 'fixed',
-          right: 24,
-          bottom: 24,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8,
-          padding: '12px 18px',
-          borderRadius: 999,
-          background: 'var(--color-primary)',
-          color: '#fff',
-          border: 'none',
-          fontSize: 13,
-          fontWeight: 700,
-          boxShadow: 'var(--shadow-lg)',
-          cursor: 'pointer',
-          zIndex: 50,
-        }}
-        aria-label="Otvoriť live chat"
-      >
-        <Icon name="message" size={16} />
-        Live Chat
-        {chat?.visitorUnread && (
-          <span
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: '50%',
-              background: '#fff',
-              boxShadow: '0 0 0 2px var(--color-primary)',
-            }}
-          />
-        )}
-      </button>
-    );
-  }
+  if (!open) return null;
 
   return (
     <div
@@ -221,7 +193,7 @@ export function LiveChatWidget() {
               Ukončiť chat
             </button>
           )}
-          <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 16, cursor: 'pointer' }}>
+          <button onClick={() => onOpenChange(false)} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 16, cursor: 'pointer' }}>
             ×
           </button>
         </div>

@@ -45,6 +45,8 @@ export function PublicNewTicketPage() {
   const [lastEmail, setLastEmail] = useState('');
   const [settings, setSettings] = useState<GeneralSettings>(DEFAULT_GENERAL_SETTINGS);
   const [kbArticles, setKbArticles] = useState<KbArticle[]>([]);
+  const [liveChatOpen, setLiveChatOpen] = useState(false);
+  const [liveChatUnread, setLiveChatUnread] = useState(false);
 
   useEffect(() => subscribeCustomers(setCustomers), []);
   useEffect(() => subscribeGeneralSettings(setSettings), []);
@@ -189,7 +191,7 @@ export function PublicNewTicketPage() {
                     <Icon name="search" size={14} /> Skontrolovať stav požiadavky
                   </button>
                   <button onClick={() => setView('knowledge')} style={heroSecondaryBtn}>
-                    <Icon name="book" size={14} /> Znalostná báza
+                    <Icon name="book" size={14} /> Užitočné informácie
                   </button>
                 </div>
               </div>
@@ -227,26 +229,50 @@ export function PublicNewTicketPage() {
                   <div style={{ fontSize: 11.5, color: 'var(--color-text-muted)', marginTop: 3 }}>Dostupné počas prevádzkových hodín</div>
                 </InfoStripItem>
               )}
+
+              {settings.liveChatEnabled && (
+                <div style={{ display: 'flex', alignItems: 'center', padding: '16px 22px', marginLeft: 'auto' }}>
+                  <button
+                    onClick={() => setLiveChatOpen((v) => !v)}
+                    style={{
+                      position: 'relative',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '10px 16px',
+                      borderRadius: 999,
+                      background: 'var(--color-primary)',
+                      color: '#fff',
+                      border: 'none',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    <Icon name="message" size={15} />
+                    Live chat
+                    {liveChatUnread && (
+                      <span
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: '#fff',
+                          boxShadow: '0 0 0 2px var(--color-primary)',
+                        }}
+                      />
+                    )}
+                  </button>
+                </div>
+              )}
             </div>
 
-            <div style={{ ...panelStyle, marginBottom: 16 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>Obľúbené články / Znalostná báza</div>
-                {kbArticles.length > 0 && (
-                  <button onClick={() => setView('knowledge')} style={inlineLinkStyle}>
-                    Zobraziť všetky články →
-                  </button>
-                )}
+            {settings.liveChatEnabled && liveChatOpen && (
+              <div style={{ marginBottom: 16 }}>
+                <LiveChatWidget open={liveChatOpen} onOpenChange={setLiveChatOpen} onUnreadChange={setLiveChatUnread} />
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {kbArticles.slice(0, 3).map((a) => (
-                  <KbRow key={a.id} article={a} />
-                ))}
-                {kbArticles.length === 0 && (
-                  <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)' }}>Zatiaľ žiadne články.</div>
-                )}
-              </div>
-            </div>
+            )}
 
             <div style={panelStyle}>
               <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 18 }}>Ako to funguje</div>
@@ -275,11 +301,24 @@ export function PublicNewTicketPage() {
               </div>
             </div>
 
-            {settings.liveChatEnabled && (
-              <div style={{ marginTop: 16 }}>
-                <LiveChatWidget />
+            <div style={{ ...panelStyle, marginTop: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 14 }}>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>Užitočné informácie k vyriešeniu problému</div>
+                {kbArticles.length > 0 && (
+                  <button onClick={() => setView('knowledge')} style={inlineLinkStyle}>
+                    Zobraziť všetky články →
+                  </button>
+                )}
               </div>
-            )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {kbArticles.slice(0, 3).map((a) => (
+                  <KbRow key={a.id} article={a} />
+                ))}
+                {kbArticles.length === 0 && (
+                  <div style={{ fontSize: 12.5, color: 'var(--color-text-faint)' }}>Zatiaľ žiadne články.</div>
+                )}
+              </div>
+            </div>
           </>
         )}
 
