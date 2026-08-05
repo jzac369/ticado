@@ -12,7 +12,7 @@ import {
   type LiveChat,
   type ChatMessage,
 } from '../firebase/livechat';
-import { subscribeGeneralSettings, updateGeneralSettings, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
+import { subscribeGeneralSettings, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
 import { subscribeTicket, subscribeActivity, lookupTicketIdByCode, createTicket } from '../firebase/tickets';
 import { subscribeTemplates, type ReplyTemplate } from '../firebase/templates';
 import { uploadAttachments } from '../firebase/attachments';
@@ -132,10 +132,6 @@ export function LiveChatInboxPage() {
     setSelected(chatId);
     setShowTemplates(false);
     markChatRead(chatId);
-  }
-
-  async function toggleLiveChat() {
-    await updateGeneralSettings({ ...settings, liveChatEnabled: !settings.liveChatEnabled });
   }
 
   const agentName = user?.email?.split('@')[0] ?? 'Technik';
@@ -372,24 +368,24 @@ export function LiveChatInboxPage() {
             spolu s jeho záznamom vedľa chatu.
           </p>
         </div>
-        <label
+        <div
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: 8,
             padding: '8px 14px',
-            background: 'var(--color-surface)',
+            background: settings.liveChatEnabled ? 'var(--color-success-bg)' : 'var(--color-surface-2)',
             border: '1px solid var(--color-border)',
             borderRadius: 'var(--radius-md)',
             fontSize: 13,
             fontWeight: 600,
-            cursor: 'pointer',
+            color: settings.liveChatEnabled ? 'var(--color-success)' : 'var(--color-text-muted)',
             whiteSpace: 'nowrap',
           }}
         >
-          <input type="checkbox" checked={settings.liveChatEnabled} onChange={toggleLiveChat} />
-          Live chat je {settings.liveChatEnabled ? 'zapnutý' : 'vypnutý'} pre klientov
-        </label>
+          <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'currentColor', flexShrink: 0 }} />
+          Live chat je {settings.liveChatEnabled ? 'zapnutý' : 'vypnutý'} (Nastavenia → Podporná stránka)
+        </div>
       </div>
 
       <div

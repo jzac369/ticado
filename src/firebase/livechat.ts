@@ -63,7 +63,7 @@ export function subscribeChatMessages(chatId: string, callback: (messages: ChatM
   });
 }
 
-const WELCOME_MESSAGE = 'Ďakujeme za správu! Ozveme sa vám čo najskôr.';
+const WELCOME_MESSAGE = 'Čaká sa na spojenie s technikom.';
 
 export async function createLiveChat(
   visitorName: string,

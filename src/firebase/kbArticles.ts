@@ -6,7 +6,10 @@ export interface KbArticle {
   id: string;
   title: string;
   category: string;
+  /** External link (optional) - if set, the article opens this URL instead of the inline body. */
   url: string;
+  /** Full article text, shown inline when there's no external url. */
+  body: string;
   order: number;
   createdAt: Timestamp | null;
 }
@@ -20,11 +23,11 @@ export function subscribeKbArticles(callback: (articles: KbArticle[]) => void) {
   });
 }
 
-export async function createKbArticle(input: { title: string; category: string; url: string; order: number }) {
+export async function createKbArticle(input: { title: string; category: string; url: string; body: string; order: number }) {
   return addDoc(kbCol, { ...input, createdAt: serverTimestamp() });
 }
 
-export async function updateKbArticle(id: string, input: Partial<Pick<KbArticle, 'title' | 'category' | 'url' | 'order'>>) {
+export async function updateKbArticle(id: string, input: Partial<Pick<KbArticle, 'title' | 'category' | 'url' | 'body' | 'order'>>) {
   return updateDoc(doc(db, 'kbArticles', id), input);
 }
 

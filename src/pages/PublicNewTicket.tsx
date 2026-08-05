@@ -12,15 +12,6 @@ import { Icon, type IconName } from '../components/Icon';
 
 const CATEGORIES = ['Sieť', 'Backup', 'Aplikácie', 'Hardvér', 'Iné'];
 
-const TILES: { icon: IconName; title: string; desc: string }[] = [
-  { icon: 'monitor', title: 'IT problém', desc: 'Technické ťažkosti so systémami' },
-  { icon: 'lock', title: 'Prístup / heslo', desc: 'Problémy s prístupom, heslami a účtami' },
-  { icon: 'tool', title: 'Hardvér', desc: 'Počítače, tlačiarne, monitory a iné zariadenia' },
-  { icon: 'layers', title: 'Softvér', desc: 'Aplikácie, licencie a inštalácie' },
-  { icon: 'plus', title: 'Nová požiadavka', desc: 'Požiadanie o prístup, nástroj alebo službu' },
-  { icon: 'info', title: 'Iné', desc: 'Ostatné požiadavky a otázky' },
-];
-
 const HOW_IT_WORKS: { icon: IconName; title: string; desc: string }[] = [
   { icon: 'edit', title: 'Nahlásenie', desc: 'Vyberte kategóriu a popíšte problém čo najpodrobnejšie. Priložte súbory alebo snímky, ak pomôžu.' },
   { icon: 'users', title: 'Spracovanie', desc: 'Náš tím vašu požiadavku vyhodnotí, priradí riešiteľa a bude vás informovať o stave.' },
@@ -202,16 +193,6 @@ export function PublicNewTicketPage() {
                   </button>
                 </div>
               </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10, marginBottom: 16 }}>
-              {TILES.map((t) => (
-                <div key={t.title} style={tileStyle}>
-                  <Icon name={t.icon} size={17} style={{ color: 'var(--color-primary)', marginBottom: 8 }} />
-                  <div style={{ fontWeight: 700, fontSize: 13 }}>{t.title}</div>
-                  <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>{t.desc}</div>
-                </div>
-              ))}
             </div>
 
             <div
@@ -635,37 +616,69 @@ function InfoStripItem({ icon, label, children }: { icon: IconName; label: strin
 }
 
 function KbRow({ article }: { article: KbArticle }) {
-  const clickable = Boolean(article.url);
+  const [expanded, setExpanded] = useState(false);
+  const hasUrl = Boolean(article.url);
+  const hasBody = Boolean(article.body?.trim());
+
+  function handleClick() {
+    if (hasUrl) window.open(article.url, '_blank', 'noopener,noreferrer');
+    else if (hasBody) setExpanded((v) => !v);
+  }
+
   return (
-    <div
-      onClick={clickable ? () => window.open(article.url, '_blank', 'noopener,noreferrer') : undefined}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 10,
-        padding: '9px 8px',
-        borderRadius: 'var(--radius-sm)',
-        cursor: clickable ? 'pointer' : 'default',
-      }}
-    >
-      <Icon name="book" size={14} style={{ color: 'var(--color-text-faint)', flexShrink: 0 }} />
-      <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{article.title}</span>
-      {article.category && (
-        <span
+    <div>
+      <div
+        onClick={handleClick}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          padding: '9px 8px',
+          borderRadius: 'var(--radius-sm)',
+          cursor: hasUrl || hasBody ? 'pointer' : 'default',
+        }}
+      >
+        <Icon name="book" size={14} style={{ color: 'var(--color-text-faint)', flexShrink: 0 }} />
+        <span style={{ fontSize: 13, fontWeight: 600, flex: 1 }}>{article.title}</span>
+        {article.category && (
+          <span
+            style={{
+              fontSize: 10.5,
+              fontWeight: 600,
+              padding: '2px 8px',
+              borderRadius: 999,
+              background: 'var(--color-surface-2)',
+              color: 'var(--color-text-muted)',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {article.category}
+          </span>
+        )}
+        <Icon
+          name={hasBody && !hasUrl ? 'chevronRight' : 'chevronRight'}
+          size={14}
           style={{
-            fontSize: 10.5,
-            fontWeight: 600,
-            padding: '2px 8px',
-            borderRadius: 999,
-            background: 'var(--color-surface-2)',
+            color: 'var(--color-text-faint)',
+            flexShrink: 0,
+            transform: expanded ? 'rotate(90deg)' : undefined,
+            transition: 'transform .15s',
+          }}
+        />
+      </div>
+      {expanded && hasBody && (
+        <div
+          style={{
+            padding: '4px 8px 14px 32px',
+            fontSize: 12.5,
             color: 'var(--color-text-muted)',
-            whiteSpace: 'nowrap',
+            lineHeight: 1.6,
+            whiteSpace: 'pre-wrap',
           }}
         >
-          {article.category}
-        </span>
+          {article.body}
+        </div>
       )}
-      <Icon name="chevronRight" size={14} style={{ color: 'var(--color-text-faint)', flexShrink: 0 }} />
     </div>
   );
 }
@@ -713,13 +726,6 @@ const heroSecondaryBtn: CSSProperties = {
   fontWeight: 700,
   fontSize: 13.5,
   cursor: 'pointer',
-};
-
-const tileStyle: CSSProperties = {
-  background: 'var(--color-surface)',
-  border: '1px solid var(--color-border)',
-  borderRadius: 'var(--radius-lg)',
-  padding: '16px 14px',
 };
 
 const panelStyle: CSSProperties = {

@@ -405,7 +405,7 @@ export function TicketsListPage() {
               if (e.target.value) bulkSetStatus(e.target.value as TicketStatus);
               e.target.value = '';
             }}
-            style={{ ...selectStyle, width: 'auto', height: 32 }}
+            style={{ ...selectStyle, width: undefined, minWidth: 172, flexShrink: 0, height: 32 }}
           >
             <option value="" disabled>
               Zmeniť stav…
@@ -423,7 +423,7 @@ export function TicketsListPage() {
               if (e.target.value) bulkSetPriority(e.target.value as TicketPriority);
               e.target.value = '';
             }}
-            style={{ ...selectStyle, width: 'auto', height: 32 }}
+            style={{ ...selectStyle, width: undefined, minWidth: 172, flexShrink: 0, height: 32 }}
           >
             <option value="" disabled>
               Zmeniť prioritu…
@@ -441,7 +441,7 @@ export function TicketsListPage() {
               bulkAssign(e.target.value);
               e.target.value = '';
             }}
-            style={{ ...selectStyle, width: 'auto', height: 32 }}
+            style={{ ...selectStyle, width: undefined, minWidth: 172, flexShrink: 0, height: 32 }}
           >
             <option value="" disabled>
               Priradiť technikovi…
