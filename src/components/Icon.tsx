@@ -42,6 +42,9 @@ const PATHS: Record<string, string> = {
   lightbulb: 'M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z',
   chevronRight: 'M9 18l6-6-6-6',
   mail: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z M22 6l-10 7L2 6',
+  pin: 'M12 2a4 4 0 0 0-4 4c0 1.8 0.8 2.7 1 3H9v2h2v9h2v-9h2v-2h-1c0.2-0.3 1-1.2 1-3a4 4 0 0 0-4-4z',
+  trash: 'M3 6h18 M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2 M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6 M10 11v6 M14 11v6',
+  checkDouble: 'M1 12l4 4L12 8 M7 12l4 4L20 6',
 };
 
 export type IconName = keyof typeof PATHS;

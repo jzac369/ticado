@@ -6,7 +6,7 @@ import { NotificationBell } from '../components/NotificationBell';
 import { subscribeAgents, type Agent } from '../firebase/agents';
 import { subscribeTickets } from '../firebase/tickets';
 import { subscribeLiveChats, type LiveChat } from '../firebase/livechat';
-import { subscribeMyMessages, type InternalMessage } from '../firebase/messages';
+import { subscribeMyConversations, isConversationUnread, type Conversation } from '../firebase/messages';
 import { AlertTicker } from '../components/AlertTicker';
 import { Icon, type IconName } from '../components/Icon';
 import type { Ticket } from '../types';
@@ -66,7 +66,7 @@ export function TopNav() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [chats, setChats] = useState<LiveChat[]>([]);
-  const [messages, setMessages] = useState<InternalMessage[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
 
   useEffect(() => {
     if (isClient) return;
@@ -82,11 +82,12 @@ export function TopNav() {
 
   useEffect(() => {
     if (isClient || !user?.email) return;
-    return subscribeMyMessages(user.email.toLowerCase(), setMessages);
+    return subscribeMyConversations(user.email.toLowerCase(), setConversations);
   }, [isClient, user]);
 
   const hasUnreadChat = chats.some((c) => c.agentUnread);
-  const unreadMessageCount = messages.filter((m) => m.toEmail === user?.email?.toLowerCase() && !m.read).length;
+  const myEmailLower = user?.email?.toLowerCase() ?? '';
+  const unreadMessageCount = conversations.filter((c) => isConversationUnread(c, myEmailLower)).length;
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {

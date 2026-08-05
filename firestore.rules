@@ -154,12 +154,26 @@ service cloud.firestore {
       allow write: if isAgent();
     }
 
-    // Internal agent-to-agent messages - only sender and recipient may read
-    // a given message; only the recipient may mark it read.
-    match /internalMessages/{messageId} {
-      allow read: if isAgent() && (resource.data.toEmail == myEmail() || resource.data.fromEmail == myEmail());
-      allow create: if isAgent() && request.resource.data.fromEmail == myEmail();
-      allow update: if isAgent() && resource.data.toEmail == myEmail();
+    // Internal agent-to-agent messaging. A conversation is keyed by its
+    // participants (1:1 or group); only participants may read/write it or
+    // its messages. Within a message, the author may edit/delete/pin it;
+    // any participant may update readBy/reactions (their own reaction only,
+    // enforced by the field path itself since it's keyed by their email).
+    match /conversations/{conversationId} {
+      allow read: if isAgent() && myEmail() in resource.data.participants;
+      allow create: if isAgent() && myEmail() in request.resource.data.participants;
+      allow update: if isAgent() && myEmail() in resource.data.participants;
+
+      match /messages/{messageId} {
+        allow read: if isAgent() &&
+          myEmail() in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        allow create: if isAgent() && request.resource.data.fromEmail == myEmail() &&
+          myEmail() in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+        allow update: if isAgent() &&
+          myEmail() in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+          (resource.data.fromEmail == myEmail() ||
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy', 'reactions', 'pinned']));
+      }
     }
 
     // Public maintenance/outage announcement banner - shown to anyone
