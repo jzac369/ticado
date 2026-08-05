@@ -115,7 +115,7 @@ export function AgentsPage() {
 
   async function handleDelete(a: Agent) {
     if (!window.confirm(`Naozaj chcete zmazať technika "${a.name}"? Tikety, ktoré mu boli priradené, ostanú priradené menom, ale nebude ich už možné vybrať z dropdownu.`)) return;
-    await deleteAgent(a.id);
+    await deleteAgent(a.id, a.name);
   }
 
   async function handleGrantAccess(a: Agent) {

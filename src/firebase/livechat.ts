@@ -30,6 +30,10 @@ export interface LiveChat {
   visitorTypingAt?: Timestamp | null;
   agentTyping?: boolean;
   agentTypingAt?: Timestamp | null;
+  /** Set once, on the first agent reply - drives the "priemerná doba prvej
+   * odpovede" metric without having to read every chat's full message
+   * subcollection. */
+  firstAgentReplyAt?: Timestamp | null;
 }
 
 export interface ChatMessage {
@@ -38,6 +42,14 @@ export interface ChatMessage {
   authorName: string;
   body: string;
   attachments?: Attachment[];
+  /** Internal agent-only note - never surfaced in the visitor-facing
+   * preview/unread state. Filtered out of the widget's message list
+   * client-side (the live-chat message subcollection is readable by
+   * anyone with the chat's unguessable ID, the same capability-token
+   * trust model already used elsewhere for this feature - this is not a
+   * hard access-control guarantee against a visitor deliberately reading
+   * Firestore directly). */
+  internal?: boolean;
   createdAt: Timestamp | null;
 }
 
@@ -97,15 +109,28 @@ export async function createLiveChat(
 
 export async function sendChatMessage(
   chatId: string,
-  message: { author: 'visitor' | 'agent'; authorName: string; body: string; attachments?: Attachment[] },
+  message: {
+    author: 'visitor' | 'agent';
+    authorName: string;
+    body: string;
+    attachments?: Attachment[];
+    /** Agent-only note - kept out of the visitor-facing preview/unread
+     * state entirely (see ChatMessage.internal). */
+    internal?: boolean;
+    /** Pass true when this is the first ever agent reply on this chat, so
+     * firstAgentReplyAt gets stamped for the response-time metric. */
+    isFirstAgentReply?: boolean;
+  },
 ) {
   await addDoc(collection(db, 'liveChats', chatId, 'messages'), {
     author: message.author,
     authorName: message.authorName,
     body: message.body,
     ...(message.attachments && message.attachments.length > 0 ? { attachments: message.attachments } : {}),
+    ...(message.internal ? { internal: true } : {}),
     createdAt: serverTimestamp(),
   });
+  if (message.internal) return;
   await updateDoc(doc(db, 'liveChats', chatId), {
     lastMessageAt: serverTimestamp(),
     lastMessagePreview: message.body.slice(0, 120) || (message.attachments?.length ? '📎 Príloha' : ''),
@@ -114,6 +139,7 @@ export async function sendChatMessage(
     agentUnread: message.author === 'visitor',
     visitorUnread: message.author === 'agent',
     ...(message.author === 'visitor' ? { visitorTyping: false } : { agentTyping: false }),
+    ...(message.isFirstAgentReply ? { firstAgentReplyAt: serverTimestamp() } : {}),
   });
 }
 
@@ -137,6 +163,43 @@ export async function claimChat(chatId: string, agentName: string) {
 
 export async function releaseChat(chatId: string) {
   await updateDoc(doc(db, 'liveChats', chatId), { claimedBy: '' });
+}
+
+/** Hands an already-claimed chat off to a different agent, leaving a
+ * system note in the thread so the handoff is visible to whoever opens
+ * the conversation next (including the visitor). */
+export async function transferChat(chatId: string, fromAgent: string, toAgent: string) {
+  await updateDoc(doc(db, 'liveChats', chatId), { claimedBy: toAgent });
+  await addDoc(collection(db, 'liveChats', chatId, 'messages'), {
+    author: 'system',
+    authorName: 'Systém',
+    body: `Chat presmerovaný z ${fromAgent} na ${toAgent}.`,
+    createdAt: serverTimestamp(),
+  });
+}
+
+const INACTIVITY_CLOSE_MS = 15 * 60 * 1000;
+
+/** Closes chats that have sat open with no activity for 15+ minutes. Purely
+ * client-triggered (no backend functions in this project) - runs from
+ * whichever agent has the Live chat inbox open, same best-effort model
+ * already used for the new-ticket/chat sound notifications. */
+export async function closeInactiveChats(chats: LiveChat[]) {
+  const now = Date.now();
+  const stale = chats.filter(
+    (c) => c.status === 'otvoreny' && now - (c.lastMessageAt?.toMillis() ?? now) > INACTIVITY_CLOSE_MS,
+  );
+  await Promise.all(
+    stale.map(async (c) => {
+      await addDoc(collection(db, 'liveChats', c.id, 'messages'), {
+        author: 'system',
+        authorName: 'Systém',
+        body: 'Chat bol automaticky ukončený pre neaktivitu.',
+        createdAt: serverTimestamp(),
+      });
+      await closeLiveChat(c.id);
+    }),
+  );
 }
 
 export async function linkChatToTicket(chatId: string, ticketCode: string) {

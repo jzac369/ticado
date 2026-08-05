@@ -7,6 +7,7 @@ const CARDS: { title: string; desc: string; to: string; icon: IconName }[] = [
   { title: 'Obsah podpory', desc: 'Šablóny odpovedí a znalostná báza pre klientov.', to: '/support-content', icon: 'list' },
   { title: 'Podporná stránka', desc: 'Texty, hodiny, live chat a banner na /support.', to: '/support-page-settings', icon: 'layers' },
   { title: 'Prideľovanie tiketov', desc: 'Manuálne alebo automatické priradenie technika.', to: '/assignment-settings', icon: 'ticket' },
+  { title: 'Log', desc: 'Prihlásenia technikov a zmeny v nastaveniach.', to: '/audit-log', icon: 'activity' },
 ];
 
 export function SettingsHubPage() {

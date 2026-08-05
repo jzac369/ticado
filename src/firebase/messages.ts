@@ -3,6 +3,7 @@ import {
   arrayRemove,
   arrayUnion,
   collection,
+  deleteDoc,
   deleteField,
   doc,
   getDocs,
@@ -175,6 +176,20 @@ export async function deleteMessage(conversationId: string, messageId: string) {
     body: '',
     attachments: deleteField(),
   });
+}
+
+/** Permanently removes a single message document (author only) - unlike
+ * deleteMessage() above, this leaves no trace/placeholder behind. */
+export async function hardDeleteMessage(conversationId: string, messageId: string) {
+  await deleteDoc(doc(db, 'conversations', conversationId, 'messages', messageId));
+}
+
+/** Permanently deletes an entire conversation and all of its messages, for
+ * every participant - not reversible. */
+export async function deleteConversation(conversationId: string) {
+  const msgsSnap = await getDocs(collection(db, 'conversations', conversationId, 'messages'));
+  await Promise.all(msgsSnap.docs.map((d) => deleteDoc(d.ref)));
+  await deleteDoc(doc(db, 'conversations', conversationId));
 }
 
 export async function togglePinMessage(conversationId: string, messageId: string, pinned: boolean) {

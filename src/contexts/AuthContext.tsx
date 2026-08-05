@@ -10,6 +10,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
+import { logAuditEvent } from '../firebase/auditLog';
 
 export type UserProfile =
   | { role: 'agent'; master: boolean }
@@ -84,7 +85,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (email: string, password: string, remember = true) => {
     await setPersistence(auth, remember ? browserLocalPersistence : browserSessionPersistence);
-    await signInWithEmailAndPassword(auth, email, password);
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const signedInEmail = cred.user.email?.toLowerCase();
+    if (signedInEmail) {
+      try {
+        const allowlistSnap = await getDoc(doc(db, 'agentAllowlist', signedInEmail));
+        if (allowlistSnap.exists()) logAuditEvent('login', 'Prihlásenie');
+      } catch {
+        // Non-agent accounts (clients) can't read agentAllowlist - that's
+        // expected and just means no login entry gets logged for them,
+        // matching "loguj prihlásenia technikov" (agents only).
+      }
+    }
   };
 
   const logout = async () => {

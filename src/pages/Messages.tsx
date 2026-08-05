@@ -11,6 +11,8 @@ import {
   emailKey,
   editMessage,
   deleteMessage,
+  hardDeleteMessage,
+  deleteConversation,
   togglePinMessage,
   toggleReaction,
   setArchived,
@@ -241,6 +243,21 @@ export function MessagesPage() {
     await deleteMessage(selectedId, m.id);
   }
 
+  async function handleHardDelete(m: InternalMessage) {
+    if (!selectedId) return;
+    if (!window.confirm('Natrvalo odstrániť túto správu? Toto sa už nedá vrátiť späť.')) return;
+    await hardDeleteMessage(selectedId, m.id);
+  }
+
+  async function handleDeleteConversation() {
+    if (!active) return;
+    if (!window.confirm(`Natrvalo zmazať celú konverzáciu s ${conversationTitle(active, myEmail)}? Zmizne aj druhej strane a nedá sa to vrátiť späť.`)) {
+      return;
+    }
+    await deleteConversation(active.id);
+    setSelectedId(null);
+  }
+
   async function handleReact(m: InternalMessage, emoji: string) {
     if (!selectedId) return;
     const current = m.reactions?.[emailKey(myEmail)];
@@ -415,16 +432,25 @@ export function MessagesPage() {
           )}
 
           {!composing && active && (
-            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)' }}>
-              <div style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
-                {active.isGroup && <Icon name="users" size={13} style={{ color: 'var(--color-text-faint)' }} />}
-                {conversationTitle(active, myEmail)}
-              </div>
-              {active.isGroup && (
-                <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 2 }}>
-                  {active.participants.filter((p) => p !== myEmail).map((p) => active.participantNames[p] ?? p).join(', ')}
+            <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--color-border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14, display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {active.isGroup && <Icon name="users" size={13} style={{ color: 'var(--color-text-faint)' }} />}
+                  {conversationTitle(active, myEmail)}
                 </div>
-              )}
+                {active.isGroup && (
+                  <div style={{ fontSize: 11, color: 'var(--color-text-faint)', marginTop: 2 }}>
+                    {active.participants.filter((p) => p !== myEmail).map((p) => active.participantNames[p] ?? p).join(', ')}
+                  </div>
+                )}
+              </div>
+              <button
+                onClick={handleDeleteConversation}
+                title="Natrvalo zmazať celú konverzáciu"
+                style={{ ...microBtn, color: 'var(--color-danger)', flexShrink: 0 }}
+              >
+                <Icon name="trash" size={12} /> Zmazať konverzáciu
+              </button>
             </div>
           )}
 
@@ -459,8 +485,16 @@ export function MessagesPage() {
                   </div>
 
                   {m.deleted ? (
-                    <div style={{ padding: '8px 12px', borderRadius: 'var(--radius-md)', fontSize: 12.5, fontStyle: 'italic', color: 'var(--color-text-faint)', background: 'var(--color-surface-2)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 'var(--radius-md)', fontSize: 12.5, fontStyle: 'italic', color: 'var(--color-text-faint)', background: 'var(--color-surface-2)' }}>
                       Táto správa bola zmazaná.
+                      {mine && (
+                        <button
+                          onClick={() => handleHardDelete(m)}
+                          style={{ background: 'none', border: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontSize: 11, fontWeight: 700, fontStyle: 'normal', padding: 0 }}
+                        >
+                          Zmazať natrvalo
+                        </button>
+                      )}
                     </div>
                   ) : isEditing ? (
                     <div>

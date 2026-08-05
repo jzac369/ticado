@@ -1,5 +1,6 @@
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from './config';
+import { logAuditEvent } from './auditLog';
 import type { Timestamp } from 'firebase/firestore';
 
 export interface Agent {
@@ -41,7 +42,7 @@ export async function createAgent(input: {
   extension?: string;
   bio?: string;
 }) {
-  return addDoc(agentsCol, {
+  const ref = await addDoc(agentsCol, {
     name: input.name,
     firstName: input.firstName ?? '',
     lastName: input.lastName ?? '',
@@ -56,6 +57,8 @@ export async function createAgent(input: {
     active: true,
     createdAt: serverTimestamp(),
   });
+  logAuditEvent('settings', `Pridaný technik: ${input.name}`);
+  return ref;
 }
 
 export async function updateAgent(
@@ -67,9 +70,13 @@ export async function updateAgent(
     >
   >,
 ) {
-  return updateDoc(doc(db, 'agents', agentId), input);
+  const ref = await updateDoc(doc(db, 'agents', agentId), input);
+  logAuditEvent('settings', `Upravený technik${input.name ? `: ${input.name}` : ` (ID ${agentId})`}`);
+  return ref;
 }
 
-export async function deleteAgent(agentId: string) {
-  return deleteDoc(doc(db, 'agents', agentId));
+export async function deleteAgent(agentId: string, agentName?: string) {
+  const ref = await deleteDoc(doc(db, 'agents', agentId));
+  logAuditEvent('settings', `Zmazaný technik${agentName ? `: ${agentName}` : ` (ID ${agentId})`}`);
+  return ref;
 }

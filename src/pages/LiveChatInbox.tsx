@@ -5,8 +5,10 @@ import {
   subscribeChatMessages,
   sendChatMessage,
   closeLiveChat,
+  closeInactiveChats,
   markChatRead,
   claimChat,
+  transferChat,
   setTyping,
   linkChatToTicket,
   type LiveChat,
@@ -15,6 +17,7 @@ import {
 import { subscribeGeneralSettings, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
 import { subscribeTicket, subscribeActivity, lookupTicketIdByCode, createTicket } from '../firebase/tickets';
 import { subscribeTemplates, type ReplyTemplate } from '../firebase/templates';
+import { subscribeAgents, type Agent } from '../firebase/agents';
 import { uploadAttachments } from '../firebase/attachments';
 import { useAuth } from '../contexts/AuthContext';
 import { StatusBadge, PriorityBadge } from '../components/Badges';
@@ -104,9 +107,12 @@ export function LiveChatInboxPage() {
   const [selected, setSelected] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [templates, setTemplates] = useState<ReplyTemplate[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
   const [draft, setDraft] = useState('');
   const [settings, setSettings] = useState<GeneralSettings>(DEFAULT_GENERAL_SETTINGS);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [showTransfer, setShowTransfer] = useState(false);
+  const [isInternalNote, setIsInternalNote] = useState(false);
   const [sending, setSending] = useState(false);
   const [now, setNow] = useState(() => Date.now());
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -115,6 +121,7 @@ export function LiveChatInboxPage() {
   useEffect(() => subscribeLiveChats(setChats), []);
   useEffect(() => subscribeGeneralSettings(setSettings), []);
   useEffect(() => subscribeTemplates(setTemplates), []);
+  useEffect(() => subscribeAgents(setAgents), []);
   useEffect(() => {
     if (!selected) return;
     return subscribeChatMessages(selected, setMessages);
@@ -123,6 +130,14 @@ export function LiveChatInboxPage() {
     const id = setInterval(() => setNow(Date.now()), 2000);
     return () => clearInterval(id);
   }, []);
+
+  // Best-effort auto-close of chats nobody has touched in 15+ minutes -
+  // only runs while an agent has this page open (no backend functions in
+  // this project), checked every minute against the already-subscribed list.
+  useEffect(() => {
+    const id = setInterval(() => closeInactiveChats(chats), 60 * 1000);
+    return () => clearInterval(id);
+  }, [chats]);
 
   const active = useMemo(() => chats.find((c) => c.id === selected) ?? null, [chats, selected]);
   const visitorTypingRecently =
@@ -148,10 +163,18 @@ export function LiveChatInboxPage() {
     e.preventDefault();
     if (!draft.trim() || !selected || active?.status === 'uzavrety') return;
     const body = draft.trim();
+    const internal = isInternalNote;
     setDraft('');
+    setIsInternalNote(false);
     if (typingTimeout.current) clearTimeout(typingTimeout.current);
     setTyping(selected, 'agent', false);
-    await sendChatMessage(selected, { author: 'agent', authorName: agentName, body });
+    await sendChatMessage(selected, {
+      author: 'agent',
+      authorName: agentName,
+      body,
+      internal,
+      isFirstAgentReply: !internal && !active?.firstAgentReplyAt,
+    });
   }
 
   function insertTemplate(t: ReplyTemplate) {
@@ -176,6 +199,12 @@ export function LiveChatInboxPage() {
   async function handleClaim() {
     if (!active) return;
     await claimChat(active.id, agentName);
+  }
+
+  async function handleTransfer(toAgentName: string) {
+    if (!active || !toAgentName) return;
+    await transferChat(active.id, active.claimedBy || agentName, toAgentName);
+    setShowTransfer(false);
   }
 
   async function handleEndChat() {
@@ -219,11 +248,49 @@ export function LiveChatInboxPage() {
                 {active.convertedTicketCode && <Tag tone="success">Prevedené: {active.convertedTicketCode}</Tag>}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0, flexWrap: 'wrap', justifyContent: 'flex-end', position: 'relative' }}>
               {!active.claimedBy && active.status === 'otvoreny' && (
                 <button onClick={handleClaim} style={smallBtn}>
                   Prevziať
                 </button>
+              )}
+              {active.claimedBy && active.status === 'otvoreny' && (
+                <div style={{ position: 'relative' }}>
+                  <button onClick={() => setShowTransfer((v) => !v)} style={smallBtn}>
+                    Presmerovať ▾
+                  </button>
+                  {showTransfer && (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '110%',
+                        right: 0,
+                        minWidth: 160,
+                        background: 'var(--color-surface)',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-md)',
+                        boxShadow: 'var(--shadow-md)',
+                        zIndex: 20,
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {agents.filter((a) => a.name !== active.claimedBy).length === 0 && (
+                        <div style={{ padding: 10, fontSize: 11.5, color: 'var(--color-text-faint)' }}>Žiadni iní technici.</div>
+                      )}
+                      {agents
+                        .filter((a) => a.name !== active.claimedBy)
+                        .map((a) => (
+                          <button
+                            key={a.id}
+                            onClick={() => handleTransfer(a.name)}
+                            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 12.5 }}
+                          >
+                            {a.name}
+                          </button>
+                        ))}
+                    </div>
+                  )}
+                </div>
               )}
               {!active.convertedTicketCode && (
                 <button onClick={handleConvertToTicket} style={smallBtn}>
@@ -239,8 +306,8 @@ export function LiveChatInboxPage() {
           </div>
           <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
             {messages.map((m) => (
-              <div key={m.id} style={{ alignSelf: m.author === 'agent' ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
-                {m.author !== 'system' && (
+              <div key={m.id} style={{ alignSelf: m.internal ? 'stretch' : m.author === 'agent' ? 'flex-end' : 'flex-start', maxWidth: m.internal ? '100%' : '70%' }}>
+                {m.author !== 'system' && !m.internal && (
                   <div
                     style={{
                       fontSize: 10.5,
@@ -254,14 +321,26 @@ export function LiveChatInboxPage() {
                 )}
                 <div
                   style={{
-                    background: m.author === 'agent' ? 'var(--color-primary)' : m.author === 'system' ? 'transparent' : 'var(--color-surface-2)',
-                    color: m.author === 'agent' ? '#fff' : m.author === 'system' ? 'var(--color-text-faint)' : 'var(--color-text)',
+                    background: m.internal
+                      ? 'var(--color-warning-bg)'
+                      : m.author === 'agent'
+                        ? 'var(--color-primary)'
+                        : m.author === 'system'
+                          ? 'transparent'
+                          : 'var(--color-surface-2)',
+                    color: m.internal ? 'var(--color-warning)' : m.author === 'agent' ? '#fff' : m.author === 'system' ? 'var(--color-text-faint)' : 'var(--color-text)',
                     padding: m.author === 'system' ? '2px 0' : '8px 12px',
                     borderRadius: 'var(--radius-md)',
                     fontSize: 13,
                     fontStyle: m.author === 'system' ? 'italic' : 'normal',
+                    border: m.internal ? '1px dashed var(--color-warning)' : undefined,
                   }}
                 >
+                  {m.internal && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, fontWeight: 700, marginBottom: 3 }}>
+                      <Icon name="lock" size={10} /> Interná poznámka · {m.authorName}
+                    </div>
+                  )}
                   {m.body}
                   {m.attachments?.map((a) => (
                     <a
@@ -330,26 +409,32 @@ export function LiveChatInboxPage() {
                   ))}
                 </div>
               )}
-              <form onSubmit={handleSend} style={{ display: 'flex', gap: 6, padding: 12 }}>
-                <input ref={fileInputRef} type="file" multiple onChange={(e) => handleFilePick(e.target.files)} style={{ display: 'none' }} />
-                <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending} title="Priložiť súbor" style={iconBtn}>
-                  <Icon name="paperclip" size={14} />
-                </button>
-                <button type="button" onClick={() => setShowTemplates((v) => !v)} title="Šablóny odpovedí" style={iconBtn}>
-                  <Icon name="list" size={14} />
-                </button>
-                <input
-                  value={draft}
-                  onChange={(e) => handleDraftChange(e.target.value)}
-                  placeholder="Napíšte odpoveď…"
-                  style={{ flex: 1, padding: '9px 12px', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', background: 'var(--color-surface)' }}
-                />
-                <button
-                  type="submit"
-                  style={{ padding: '0 18px', background: 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 700 }}
-                >
-                  Odoslať
-                </button>
+              <form onSubmit={handleSend} style={{ padding: 12 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, fontSize: 11.5, fontWeight: 600, color: isInternalNote ? 'var(--color-warning)' : 'var(--color-text-muted)', cursor: 'pointer', width: 'fit-content' }}>
+                  <input type="checkbox" checked={isInternalNote} onChange={(e) => setIsInternalNote(e.target.checked)} />
+                  <Icon name="lock" size={11} /> Interná poznámka (nevidí návštevník)
+                </label>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <input ref={fileInputRef} type="file" multiple onChange={(e) => handleFilePick(e.target.files)} style={{ display: 'none' }} />
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={sending} title="Priložiť súbor" style={iconBtn}>
+                    <Icon name="paperclip" size={14} />
+                  </button>
+                  <button type="button" onClick={() => setShowTemplates((v) => !v)} title="Šablóny odpovedí" style={iconBtn}>
+                    <Icon name="list" size={14} />
+                  </button>
+                  <input
+                    value={draft}
+                    onChange={(e) => handleDraftChange(e.target.value)}
+                    placeholder={isInternalNote ? 'Interná poznámka pre tím…' : 'Napíšte odpoveď…'}
+                    style={{ flex: 1, padding: '9px 12px', border: `1px solid ${isInternalNote ? 'var(--color-warning)' : 'var(--color-border)'}`, borderRadius: 'var(--radius-md)', background: 'var(--color-surface)' }}
+                  />
+                  <button
+                    type="submit"
+                    style={{ padding: '0 18px', background: isInternalNote ? 'var(--color-warning)' : 'var(--color-primary)', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', fontWeight: 700 }}
+                  >
+                    Odoslať
+                  </button>
+                </div>
               </form>
             </div>
           )}

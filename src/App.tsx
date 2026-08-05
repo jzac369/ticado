@@ -29,6 +29,7 @@ import { KbArticlesSettingsPage } from './pages/KbArticlesSettings';
 import { SupportContentSettingsPage } from './pages/SupportContentSettings';
 import { SupportPageSettingsPage } from './pages/SupportPageSettings';
 import { AssignmentSettingsPage } from './pages/AssignmentSettings';
+import { AuditLogSettingsPage } from './pages/AuditLogSettings';
 import { MessagesPage } from './pages/Messages';
 
 function App() {
@@ -201,6 +202,14 @@ function App() {
               element={
                 <AgentOnlyRoute>
                   <MessagesPage />
+                </AgentOnlyRoute>
+              }
+            />
+            <Route
+              path="audit-log"
+              element={
+                <AgentOnlyRoute>
+                  <AuditLogSettingsPage />
                 </AgentOnlyRoute>
               }
             />

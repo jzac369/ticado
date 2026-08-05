@@ -1,5 +1,6 @@
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from './config';
+import { logAuditEvent } from './auditLog';
 
 /**
  * How a newly created ticket picks a technician (only applies to tickets
@@ -79,4 +80,5 @@ export function subscribeGeneralSettings(callback: (s: GeneralSettings) => void)
 
 export async function updateGeneralSettings(s: GeneralSettings) {
   await setDoc(ref, s);
+  logAuditEvent('settings', 'Upravené všeobecné nastavenia / prideľovanie tiketov (Podporná stránka)');
 }

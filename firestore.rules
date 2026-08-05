@@ -154,6 +154,20 @@ service cloud.firestore {
       allow write: if isAgent();
     }
 
+    // "Aktuality" sticky-note board on the Dashboard - any agent can post
+    // or remove a note, team-board style (not author-restricted).
+    match /dashboardNotes/{noteId} {
+      allow read: if isAgent();
+      allow create, delete: if isAgent();
+    }
+
+    // Audit log: agent logins and settings changes. Append-only from the
+    // client - nothing may edit or delete an existing entry.
+    match /auditLog/{entryId} {
+      allow read: if isAgent();
+      allow create: if isAgent() && request.resource.data.actorEmail == myEmail();
+    }
+
     // Internal agent-to-agent messaging. A conversation is keyed by its
     // participants (1:1 or group); only participants may read/write it or
     // its messages. Within a message, the author may edit/delete/pin it;
@@ -163,6 +177,9 @@ service cloud.firestore {
       allow read: if isAgent() && myEmail() in resource.data.participants;
       allow create: if isAgent() && myEmail() in request.resource.data.participants;
       allow update: if isAgent() && myEmail() in resource.data.participants;
+      // Any participant can permanently delete the whole conversation -
+      // this removes it for everyone in it, not just the caller.
+      allow delete: if isAgent() && myEmail() in resource.data.participants;
 
       match /messages/{messageId} {
         allow read: if isAgent() &&
@@ -173,6 +190,9 @@ service cloud.firestore {
           myEmail() in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
           (resource.data.fromEmail == myEmail() ||
            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy', 'reactions', 'pinned']));
+        // Only the author may permanently delete their own message (the
+        // conversation-level delete above handles wiping everything at once).
+        allow delete: if isAgent() && resource.data.fromEmail == myEmail();
       }
     }
 

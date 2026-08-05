@@ -1,8 +1,24 @@
-﻿import { useState, type ReactNode } from 'react';
+﻿import { useMemo, useState, type ReactNode } from 'react';
+import { Icon } from '../components/Icon';
 
 interface Entry {
   title: string;
   body: ReactNode;
+}
+
+function highlight(text: string, query: string): ReactNode {
+  if (!query) return text;
+  const idx = text.toLowerCase().indexOf(query.toLowerCase());
+  if (idx === -1) return text;
+  return (
+    <>
+      {text.slice(0, idx)}
+      <mark style={{ background: 'var(--color-warning-bg)', color: 'var(--color-warning)', padding: '0 1px', borderRadius: 2 }}>
+        {text.slice(idx, idx + query.length)}
+      </mark>
+      {text.slice(idx + query.length)}
+    </>
+  );
 }
 
 interface Group {
@@ -238,21 +254,68 @@ export function LegendPage() {
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUPS.map((g) => [g.title, true])),
   );
+  const [search, setSearch] = useState('');
 
   function toggle(title: string) {
     setOpenGroups((s) => ({ ...s, [title]: !s[title] }));
   }
 
+  const query = search.trim();
+  const isSearching = query.length > 0;
+
+  const visibleGroups = useMemo(() => {
+    if (!isSearching) return GROUPS;
+    const q = query.toLowerCase();
+    return GROUPS.map((g) => ({
+      ...g,
+      entries: g.entries.filter(
+        (e) => e.title.toLowerCase().includes(q) || (typeof e.body === 'string' && e.body.toLowerCase().includes(q)),
+      ),
+    })).filter((g) => g.entries.length > 0);
+  }, [query, isSearching]);
+
   return (
     <div style={{ maxWidth: 860 }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-primary)', letterSpacing: 0.4 }}>NÁPOVEDA</div>
       <h1 style={{ fontSize: 24, margin: '4px 0 4px' }}>Legenda funkcií</h1>
-      <p style={{ margin: '0 0 20px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
+      <p style={{ margin: '0 0 16px', color: 'var(--color-text-muted)', fontSize: 13.5 }}>
         Prehľad všetkých funkcií RONA Technická podpora — čo znamenajú a ako sa používajú.
       </p>
 
+      <div style={{ position: 'relative', marginBottom: 20 }}>
+        <Icon
+          name="search"
+          size={13}
+          style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-faint)' }}
+        />
+        <input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Hľadať v Pomoci…"
+          style={{
+            width: '100%',
+            padding: '10px 14px 10px 34px',
+            border: '1px solid var(--color-border)',
+            borderRadius: 'var(--radius-md)',
+            background: 'var(--color-surface)',
+            fontSize: 13.5,
+          }}
+        />
+      </div>
+
+      {isSearching && (
+        <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)', marginBottom: 10 }}>
+          {visibleGroups.reduce((sum, g) => sum + g.entries.length, 0)} výsledkov pre "{query}"
+        </div>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {GROUPS.map((group) => (
+        {isSearching && visibleGroups.length === 0 && (
+          <div style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-faint)', fontSize: 13.5 }}>
+            Nič sa nenašlo.
+          </div>
+        )}
+        {visibleGroups.map((group) => (
           <div
             key={group.title}
             style={{
@@ -278,16 +341,20 @@ export function LegendPage() {
               }}
             >
               {group.title}
-              <span style={{ transform: openGroups[group.title] ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform .15s' }}>
+              <span style={{ transform: isSearching || openGroups[group.title] ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform .15s' }}>
                 ▾
               </span>
             </button>
-            {openGroups[group.title] && (
+            {(isSearching || openGroups[group.title]) && (
               <div style={{ padding: '6px 18px 16px' }}>
                 {group.entries.map((entry) => (
                   <div key={entry.title} style={{ padding: '10px 0', borderTop: '1px solid var(--color-border)' }}>
-                    <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 4 }}>{entry.title}</div>
-                    <div style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>{entry.body}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13.5, marginBottom: 4 }}>
+                      {isSearching ? highlight(entry.title, query) : entry.title}
+                    </div>
+                    <div style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
+                      {isSearching && typeof entry.body === 'string' ? highlight(entry.body, query) : entry.body}
+                    </div>
                   </div>
                 ))}
               </div>

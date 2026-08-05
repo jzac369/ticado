@@ -10,6 +10,7 @@ import { RankBarList } from '../components/charts/RankBarList';
 import { Icon } from '../components/Icon';
 import { useAuth } from '../contexts/AuthContext';
 import { ClientTicketsPage } from './ClientTickets';
+import { subscribeDashboardNotes, addDashboardNote, deleteDashboardNote, type DashboardNote } from '../firebase/dashboardNotes';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const PANEL_HEIGHT = 204;
@@ -75,7 +76,7 @@ const AGE_BUCKETS = [
 const DAY_OPTIONS = [7, 14, 30];
 
 export function DashboardPage() {
-  const { profile } = useAuth();
+  const { profile, user } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [activity, setActivity] = useState<ActivityEntry[]>([]);
   const [messages, setMessages] = useState<TicketMessage[]>([]);
@@ -92,6 +93,11 @@ export function DashboardPage() {
   useEffect(() => subscribeGlobalActivity(setActivity, 10), []);
   useEffect(() => subscribeRecentMessages(setMessages, 500), []);
   useEffect(() => subscribeAgents(setAgents), []);
+
+  const myAgentName = useMemo(
+    () => agents.find((a) => a.email && a.email.toLowerCase() === user?.email?.toLowerCase())?.name ?? user?.email?.split('@')[0] ?? 'Technik',
+    [agents, user],
+  );
 
   const filteredTickets = useMemo(() => {
     return tickets.filter((t) => {
@@ -236,16 +242,6 @@ export function DashboardPage() {
       .slice(0, 5);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredTickets, agents, days]);
-
-  const topFirms = useMemo(() => {
-    const open = filteredTickets.filter((t) => t.status !== 'uzavrety');
-    const map = new Map<string, number>();
-    open.forEach((t) => map.set(t.customerName, (map.get(t.customerName) ?? 0) + 1));
-    return [...map.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([label, value]) => ({ label, value }));
-  }, [filteredTickets]);
 
   const actionItems = useMemo(() => {
     const open = filteredTickets.filter((t) => t.status !== 'uzavrety');
@@ -434,9 +430,7 @@ export function DashboardPage() {
           </div>
         </Panel>
 
-        <Panel title="Priemerný čas riešenia" subtitle="Podľa priority">
-          <RankBarList items={resolutionByPriority} color="var(--chart-series-7)" />
-        </Panel>
+        <AktualityPanel authorName={myAgentName} />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 8 }}>
@@ -454,8 +448,8 @@ export function DashboardPage() {
           </div>
         </Panel>
 
-        <Panel title="Najviac otvorených" subtitle="Zákazníci">
-          <RankBarList items={topFirms} color="var(--chart-series-1)" />
+        <Panel title="Priemerný čas riešenia" subtitle="Podľa priority">
+          <RankBarList items={resolutionByPriority} color="var(--chart-series-7)" />
         </Panel>
       </div>
 
@@ -686,6 +680,133 @@ function Panel({ title, subtitle, children }: { title: string; subtitle: string;
         <div style={{ fontSize: 9.5, color: 'var(--color-text-faint)' }}>{subtitle}</div>
       </div>
       <div style={{ flex: 1, minHeight: 0 }}>{children}</div>
+    </div>
+  );
+}
+
+function fmtNoteTime(ts: DashboardNote['createdAt']) {
+  if (!ts) return '';
+  return ts.toDate().toLocaleString('sk-SK', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function AktualityPanel({ authorName }: { authorName: string }) {
+  const [notes, setNotes] = useState<DashboardNote[]>([]);
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState('');
+
+  useEffect(() => subscribeDashboardNotes(setNotes), []);
+
+  async function handleAdd() {
+    if (!draft.trim()) return;
+    await addDashboardNote(draft.trim(), authorName);
+    setDraft('');
+    setAdding(false);
+  }
+
+  return (
+    <div
+      style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-md)',
+        padding: 9,
+        height: PANEL_HEIGHT,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5, flexShrink: 0 }}>
+        <div style={{ fontWeight: 700, fontSize: 11 }}>Aktuality</div>
+        <button
+          onClick={() => setAdding((v) => !v)}
+          title="Pridať odkaz"
+          style={{
+            width: 16,
+            height: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            border: '1px solid var(--color-border)',
+            borderRadius: 4,
+            background: adding ? 'var(--color-primary)' : 'var(--color-surface-2)',
+            color: adding ? '#fff' : 'var(--color-text-muted)',
+            cursor: 'pointer',
+            flexShrink: 0,
+          }}
+        >
+          <Icon name="plus" size={10} />
+        </button>
+      </div>
+
+      {adding && (
+        <div style={{ display: 'flex', gap: 4, marginBottom: 6, flexShrink: 0 }}>
+          <input
+            autoFocus
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleAdd();
+            }}
+            placeholder="Krátky odkaz…"
+            style={{ flex: 1, padding: '4px 6px', fontSize: 10.5, border: '1px solid var(--color-border)', borderRadius: 4, background: 'var(--color-surface)' }}
+          />
+          <button
+            onClick={handleAdd}
+            style={{ padding: '0 8px', fontSize: 10.5, fontWeight: 700, border: 'none', borderRadius: 4, background: 'var(--color-primary)', color: '#fff', cursor: 'pointer' }}
+          >
+            OK
+          </button>
+        </div>
+      )}
+
+      <div style={{ flex: 1, minHeight: 0, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 5 }}>
+        {notes.length === 0 && !adding && (
+          <div style={{ fontSize: 10.5, color: 'var(--color-text-faint)' }}>Zatiaľ žiadne odkazy.</div>
+        )}
+        {notes.map((n) => (
+          <div
+            key={n.id}
+            style={{
+              position: 'relative',
+              padding: '5px 20px 5px 7px',
+              background: 'var(--color-warning-bg)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 4,
+              fontSize: 10.5,
+              lineHeight: 1.4,
+            }}
+          >
+            <button
+              onClick={() => deleteDashboardNote(n.id)}
+              title="Zmazať"
+              style={{
+                position: 'absolute',
+                top: 3,
+                right: 3,
+                width: 13,
+                height: 13,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                border: 'none',
+                background: 'none',
+                color: 'var(--color-text-faint)',
+                cursor: 'pointer',
+                fontSize: 11,
+                lineHeight: 1,
+                padding: 0,
+              }}
+            >
+              ×
+            </button>
+            <div style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{n.body}</div>
+            <div style={{ fontSize: 9, color: 'var(--color-text-faint)', marginTop: 2 }}>
+              {n.authorName} · {fmtNoteTime(n.createdAt)}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

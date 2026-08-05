@@ -44,6 +44,7 @@ export function LiveChatWidget() {
     if (!chatId) return;
     return subscribeChatMessages(chatId, setMessages);
   }, [chatId]);
+  const visibleMessages = messages.filter((m) => !m.internal);
 
   useEffect(() => {
     if (!chatId) return;
@@ -290,12 +291,12 @@ export function LiveChatWidget() {
       ) : (
         <>
           <div ref={listRef} style={{ flex: 1, overflowY: 'auto', padding: 12, display: 'flex', flexDirection: 'column', gap: 8, minHeight: 200 }}>
-            {messages.length === 0 && (
+            {visibleMessages.length === 0 && (
               <div style={{ fontSize: 12, color: 'var(--color-text-faint)', textAlign: 'center', marginTop: 20 }}>
                 Napíšte správu a náš tím vám odpovie čo najskôr.
               </div>
             )}
-            {messages.map((m) => (
+            {visibleMessages.map((m) => (
               <div key={m.id} style={{ alignSelf: m.author === 'visitor' ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
                 {m.author !== 'system' && (
                   <div

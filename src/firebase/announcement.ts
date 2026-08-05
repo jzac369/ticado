@@ -1,5 +1,6 @@
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from './config';
+import { logAuditEvent } from './auditLog';
 
 export type AnnouncementTone = 'info' | 'warning' | 'danger';
 
@@ -19,4 +20,5 @@ export function subscribeAnnouncement(callback: (a: Announcement | null) => void
 
 export async function updateAnnouncement(a: Announcement) {
   await setDoc(ref, a);
+  logAuditEvent('settings', `Upravený banner pre klientov (${a.enabled ? 'zapnutý' : 'vypnutý'})`);
 }

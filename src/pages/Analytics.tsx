@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { subscribeTickets, subscribeRecentMessages } from '../firebase/tickets';
 import { subscribeAgents } from '../firebase/agents';
+import { subscribeLiveChats, type LiveChat } from '../firebase/livechat';
 import type { Ticket, TicketMessage } from '../types';
 import { RankBarList } from '../components/charts/RankBarList';
 
@@ -14,10 +15,39 @@ export function AnalyticsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [agentNames, setAgentNames] = useState<string[]>([]);
+  const [chats, setChats] = useState<LiveChat[]>([]);
 
   useEffect(() => subscribeTickets(setTickets), []);
   useEffect(() => subscribeRecentMessages(setMessages, 2000), []);
   useEffect(() => subscribeAgents((agents) => setAgentNames(agents.map((a) => a.name))), []);
+  useEffect(() => subscribeLiveChats(setChats), []);
+
+  const chatStats = useMemo(() => {
+    const withReply = chats.filter((c) => c.firstAgentReplyAt && c.createdAt);
+    const avgResponseHours = withReply.length
+      ? withReply.reduce((sum, c) => sum + (c.firstAgentReplyAt!.toMillis() - c.createdAt!.toMillis()), 0) / withReply.length / (60 * 60 * 1000)
+      : null;
+
+    const byDay = new Map<string, number>();
+    chats.forEach((c) => {
+      if (!c.createdAt) return;
+      const key = c.createdAt.toDate().toLocaleDateString('sk-SK', { day: '2-digit', month: '2-digit' });
+      byDay.set(key, (byDay.get(key) ?? 0) + 1);
+    });
+    const last7 = [...byDay.entries()].slice(-7);
+    const avgPerDay = last7.length ? last7.reduce((s, [, n]) => s + n, 0) / last7.length : 0;
+
+    const converted = chats.filter((c) => c.convertedTicketCode).length;
+    const conversionRate = chats.length ? (converted / chats.length) * 100 : 0;
+
+    return {
+      total: chats.length,
+      avgResponseHours,
+      avgPerDay,
+      converted,
+      conversionRate,
+    };
+  }, [chats]);
 
   const firstResponseByTicket = useMemo(() => {
     const byTicket = new Map<string, TicketMessage[]>();
@@ -145,6 +175,30 @@ export function AnalyticsPage() {
           </tbody>
         </table>
       </div>
+
+      <div style={{ fontWeight: 700, fontSize: 15, margin: '24px 0 12px' }}>Live chat</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14 }}>
+        <ChatStatCard label="Priemerná doba prvej odpovede" value={chatStats.avgResponseHours !== null ? formatHours(chatStats.avgResponseHours) : '—'} />
+        <ChatStatCard label="Chatov / deň (posledných 7 dní)" value={chatStats.avgPerDay.toFixed(1)} />
+        <ChatStatCard label="Prevedené na tiket" value={`${chatStats.converted} / ${chatStats.total}`} />
+        <ChatStatCard label="Konverzný pomer chat → tiket" value={`${chatStats.conversionRate.toFixed(0)} %`} />
+      </div>
+    </div>
+  );
+}
+
+function ChatStatCard({ label, value }: { label: string; value: string }) {
+  return (
+    <div
+      style={{
+        background: 'var(--color-surface)',
+        border: '1px solid var(--color-border)',
+        borderRadius: 'var(--radius-lg)',
+        padding: '14px 16px',
+      }}
+    >
+      <div style={{ fontSize: 11.5, color: 'var(--color-text-faint)', fontWeight: 600, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-primary)' }}>{value}</div>
     </div>
   );
 }
