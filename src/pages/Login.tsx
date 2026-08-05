@@ -2,6 +2,7 @@ import { useState, type CSSProperties, type FormEvent } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Logo } from '../components/Logo';
+import { Icon } from '../components/Icon';
 
 export function LoginPage() {
   const { login, user, loading } = useAuth();
@@ -43,7 +44,7 @@ export function LoginPage() {
     >
       <div
         style={{
-          background: 'linear-gradient(160deg, #4a1524 0%, #6f2035 45%, #8b2942 100%)',
+          background: `linear-gradient(160deg, rgba(74,21,36,0.93) 0%, rgba(111,32,53,0.88) 45%, rgba(139,41,66,0.8) 100%), url(${import.meta.env.BASE_URL}login-hero.png) center 20% / cover no-repeat`,
           color: '#fff',
           padding: '56px 64px',
           display: 'flex',
@@ -78,16 +79,16 @@ export function LoginPage() {
             RONA TECHNICKÁ PODPORA
           </span>
           <h1 style={{ fontSize: 42, lineHeight: 1.15, margin: '0 0 16px', fontWeight: 600 }}>
-            Podpora a tickety
+            Podpora a správa požiadaviek
             <br />
             na jednom mieste.
           </h1>
           <p style={{ fontSize: 16, opacity: 0.85, maxWidth: 420, margin: 0 }}>
-            Tickety, zamestnanci a IT podpora RONA v jednom prehľadnom pracovnom priestore.
+            Správa servisných požiadaviek, interných požiadaviek a komunikácia s IT oddelením na jednom mieste.
           </p>
         </div>
 
-        <div style={{ fontSize: 12.5, opacity: 0.7 }}>Dôverné — iba pre zamestnancov a klientov RONA</div>
+        <div style={{ fontSize: 12.5, opacity: 0.7 }}>Zabezpečený systém evidencie požiadaviek v1.00</div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
@@ -121,7 +122,7 @@ export function LoginPage() {
               <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.6, color: 'var(--color-text-faint)' }}>
                 VITAJTE SPÄŤ
               </div>
-              <div style={{ fontSize: 17, fontWeight: 700 }}>Prihlásenie do RONA Technická podpora</div>
+              <div style={{ fontSize: 17, fontWeight: 700 }}>Prihlásenie</div>
             </div>
           </div>
 
@@ -184,8 +185,11 @@ export function LoginPage() {
               fontSize: 12.5,
             }}
           >
-            <Link to="/support" style={{ color: 'var(--color-text-muted)' }}>
-              🌐 Nahlásiť problém bez prihlásenia →
+            <Link
+              to="/support"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--color-text-muted)' }}
+            >
+              <Icon name="globe" size={13} /> Nahlásiť problém bez prihlásenia →
             </Link>
           </div>
         </form>
