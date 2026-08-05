@@ -1,6 +1,6 @@
-import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from './config';
-import { logAuditEvent } from './auditLog';
+import { logAuditEvent, describeFieldChanges } from './auditLog';
 import type { Timestamp } from 'firebase/firestore';
 
 export interface Agent {
@@ -57,9 +57,24 @@ export async function createAgent(input: {
     active: true,
     createdAt: serverTimestamp(),
   });
-  logAuditEvent('settings', `Pridaný technik: ${input.name}`);
+  const details = [input.position && `pozícia: ${input.position}`, input.email && `email: ${input.email}`].filter(Boolean).join(', ');
+  logAuditEvent('settings', `Pridaný technik: ${input.name}${details ? ` (${details})` : ''}`);
   return ref;
 }
+
+const AGENT_FIELD_LABELS: Partial<Record<keyof Agent, string>> = {
+  name: 'Meno',
+  firstName: 'Krstné meno',
+  lastName: 'Priezvisko',
+  position: 'Pozícia',
+  email: 'Email',
+  phone: 'Telefón',
+  team: 'Tím',
+  specialization: 'Špecializácia',
+  availability: 'Dostupnosť',
+  extension: 'Klapka',
+  bio: 'Bio',
+};
 
 export async function updateAgent(
   agentId: string,
@@ -70,8 +85,12 @@ export async function updateAgent(
     >
   >,
 ) {
+  const beforeSnap = await getDoc(doc(db, 'agents', agentId));
+  const before = beforeSnap.exists() ? (beforeSnap.data() as Agent) : null;
   const ref = await updateDoc(doc(db, 'agents', agentId), input);
-  logAuditEvent('settings', `Upravený technik${input.name ? `: ${input.name}` : ` (ID ${agentId})`}`);
+  const displayName = input.name ?? before?.name ?? agentId;
+  const diff = describeFieldChanges(before, { ...before, ...input } as Agent, AGENT_FIELD_LABELS);
+  logAuditEvent('settings', diff ? `Upravený technik ${displayName}: ${diff}` : `Technik ${displayName} uložený (bez zmeny hodnôt)`);
   return ref;
 }
 

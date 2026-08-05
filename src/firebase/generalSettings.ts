@@ -1,6 +1,6 @@
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from './config';
-import { logAuditEvent } from './auditLog';
+import { logAuditEvent, describeFieldChanges } from './auditLog';
 
 /**
  * How a newly created ticket picks a technician (only applies to tickets
@@ -78,7 +78,30 @@ export function subscribeGeneralSettings(callback: (s: GeneralSettings) => void)
   });
 }
 
+const GENERAL_SETTINGS_LABELS: Record<keyof GeneralSettings, string> = {
+  liveChatEnabled: 'Live chat',
+  chatSoundEnabled: 'Zvuk pri live chate',
+  newTicketSoundEnabled: 'Zvuk pri novom tikete',
+  supportWelcomeTitle: 'Uvítací nadpis',
+  supportWelcomeSubtitle: 'Uvítací podnadpis',
+  supportHours: 'Prevádzkové hodiny (zobrazený text)',
+  supportOpenDays: 'Otvorené dni (živý indikátor)',
+  supportOpenFrom: 'Otvorené od',
+  supportOpenTo: 'Otvorené do',
+  supportPhone: 'Telefón pre urgentné prípady',
+  supportFooterText: 'Text v päte podpornej stránky',
+  assignmentStrategy: 'Spôsob prideľovania tiketov',
+};
+
+const DAY_NAMES = ['Ne', 'Po', 'Ut', 'St', 'Št', 'Pi', 'So'];
+
 export async function updateGeneralSettings(s: GeneralSettings) {
+  const beforeSnap = await getDoc(ref);
+  const before = beforeSnap.exists() ? ({ ...DEFAULT_GENERAL_SETTINGS, ...(beforeSnap.data() as Partial<GeneralSettings>) } as GeneralSettings) : null;
   await setDoc(ref, s);
-  logAuditEvent('settings', 'Upravené všeobecné nastavenia / prideľovanie tiketov (Podporná stránka)');
+  const diff = describeFieldChanges(before, s, GENERAL_SETTINGS_LABELS, {
+    assignmentStrategy: (v) => ASSIGNMENT_STRATEGY_LABELS[v as AssignmentStrategy] ?? String(v),
+    supportOpenDays: (v) => (Array.isArray(v) ? (v as number[]).map((d) => DAY_NAMES[d]).join(', ') : String(v)),
+  });
+  logAuditEvent('settings', diff ? `Zmena nastavení: ${diff}` : 'Nastavenia uložené (bez zmeny hodnôt)');
 }
