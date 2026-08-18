@@ -9,6 +9,54 @@ export function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+interface FileTypeMeta {
+  label: string;
+  fg: string;
+  bg: string;
+}
+
+/** Colors/labels a file-type badge by extension/content-type, so a ticket
+ * list can show at a glance whether an attachment is a PDF, image, Office
+ * doc, etc. without opening it. */
+export function attachmentTypeMeta(attachment: Pick<Attachment, 'name' | 'contentType'>): FileTypeMeta {
+  const ext = (attachment.name.split('.').pop() || '').toUpperCase();
+  const ct = attachment.contentType.toLowerCase();
+
+  if (ct === 'application/pdf' || ext === 'PDF') return { label: 'PDF', fg: 'var(--color-danger)', bg: 'var(--color-danger-bg)' };
+  if (ct.startsWith('image/')) return { label: ext || 'IMG', fg: 'var(--color-info)', bg: 'var(--color-info-bg)' };
+  if (ct.includes('word') || ['DOC', 'DOCX'].includes(ext)) return { label: ext || 'DOC', fg: 'var(--color-critical)', bg: 'var(--color-critical-bg)' };
+  if (ct.includes('sheet') || ct.includes('excel') || ['XLS', 'XLSX', 'CSV'].includes(ext))
+    return { label: ext || 'XLS', fg: 'var(--color-success)', bg: 'var(--color-success-bg)' };
+  if (ct.includes('presentation') || ['PPT', 'PPTX'].includes(ext)) return { label: ext || 'PPT', fg: 'var(--color-warning)', bg: 'var(--color-warning-bg)' };
+  if (['ZIP', 'RAR', '7Z'].includes(ext)) return { label: ext, fg: 'var(--color-text-muted)', bg: 'var(--color-surface-2)' };
+  return { label: ext.slice(0, 4) || 'FILE', fg: 'var(--color-text-muted)', bg: 'var(--color-surface-2)' };
+}
+
+/** Small colored pill for one file type, e.g. "PDF" or "JPG" - used to flag
+ * at a glance what kind of attachment(s) a ticket row has. */
+export function AttachmentTypeBadge({ attachment, title }: { attachment: Pick<Attachment, 'name' | 'contentType'>; title?: string }) {
+  const meta = attachmentTypeMeta(attachment);
+  return (
+    <span
+      title={title ?? attachment.name}
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '1.5px 5px',
+        borderRadius: 4,
+        fontSize: 9,
+        fontWeight: 800,
+        letterSpacing: 0.2,
+        color: meta.fg,
+        background: meta.bg,
+        lineHeight: 1.5,
+      }}
+    >
+      {meta.label}
+    </span>
+  );
+}
+
 /** Chrome (and other browsers) silently refuses to navigate a new tab to a
  * `data:` URL - the address bar shows it but the tab stays blank. `blob:`
  * URLs don't have that restriction, so a resolved `data:` URI is converted

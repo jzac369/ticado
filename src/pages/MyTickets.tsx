@@ -13,6 +13,8 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Ticket, TicketMessage, TicketPriority, TicketStatus } from '../types';
 import { CHANNEL_LABELS, PRIORITY_LABELS, STATUS_LABELS } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/Badges';
+import { AttachmentTypeBadge } from '../components/AttachmentView';
+import type { Attachment } from '../types';
 
 function ageLabel(createdAt: Ticket['createdAt']) {
   if (!createdAt) return '—';
@@ -52,6 +54,27 @@ export function MyTicketsPage() {
     messages.forEach((m) => {
       const existing = map.get(m.ticketId) ?? '';
       map.set(m.ticketId, `${existing} ${m.body}`);
+    });
+    return map;
+  }, [messages]);
+
+  // Distinct-by-type attachments per ticket, for the file-type badges next
+  // to the subject - only reflects the 500 most recently loaded messages
+  // (same window subscribeRecentMessages already limits search/preview to).
+  const attachmentsByTicket = useMemo(() => {
+    const map = new Map<string, Attachment[]>();
+    messages.forEach((m) => {
+      if (!m.attachments || m.attachments.length === 0) return;
+      const existing = map.get(m.ticketId) ?? [];
+      const seenTypes = new Set(existing.map((a) => a.contentType + '|' + a.name.split('.').pop()));
+      m.attachments.forEach((a) => {
+        const key = a.contentType + '|' + a.name.split('.').pop();
+        if (!seenTypes.has(key)) {
+          seenTypes.add(key);
+          existing.push(a);
+        }
+      });
+      map.set(m.ticketId, existing);
     });
     return map;
   }, [messages]);
@@ -302,7 +325,26 @@ export function MyTicketsPage() {
                   </td>
                 )}
                 <td style={{ padding: '12px 14px', fontWeight: 700, color: 'var(--color-primary)' }}>{t.code}</td>
-                <td style={{ padding: '12px 14px', fontWeight: 600 }}>{t.subject}</td>
+                <td style={{ padding: '12px 14px', fontWeight: 600 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>{t.subject}</span>
+                    {(attachmentsByTicket.get(t.id)?.length ?? 0) > 0 && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+                        {attachmentsByTicket
+                          .get(t.id)!
+                          .slice(0, 3)
+                          .map((a, i) => (
+                            <AttachmentTypeBadge key={i} attachment={a} />
+                          ))}
+                        {attachmentsByTicket.get(t.id)!.length > 3 && (
+                          <span style={{ fontSize: 9, color: 'var(--color-text-faint)', fontWeight: 700 }}>
+                            +{attachmentsByTicket.get(t.id)!.length - 3}
+                          </span>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                </td>
                 <td style={{ padding: '12px 14px' }}>{t.customerName}</td>
                 <td style={{ padding: '12px 14px' }}>{t.requesterName}</td>
                 <td style={{ padding: '12px 14px', color: 'var(--color-text-muted)' }}>{CHANNEL_LABELS[t.channel]}</td>
