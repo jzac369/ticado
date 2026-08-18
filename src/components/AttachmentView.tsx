@@ -9,6 +9,19 @@ export function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+/** Chrome (and other browsers) silently refuses to navigate a new tab to a
+ * `data:` URL - the address bar shows it but the tab stays blank. `blob:`
+ * URLs don't have that restriction, so a resolved `data:` URI is converted
+ * to one before it's used for the "Otvoriť"/"Uložiť" links. */
+function dataUrlToObjectUrl(dataUrl: string): string {
+  const [header, base64] = dataUrl.split(',');
+  const contentType = /data:(.*);base64/.exec(header)?.[1] ?? 'application/octet-stream';
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return URL.createObjectURL(new Blob([bytes], { type: contentType }));
+}
+
 /** Resolves an attachment's storage reference into an openable URL (see
  * `resolveAttachmentUrl`) once per mount, so every render site can just show
  * a loading state instead of re-implementing the fetch. */
@@ -16,16 +29,24 @@ function useResolvedAttachmentUrl(url: string) {
   const [resolved, setResolved] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
+    let createdObjectUrl: string | null = null;
     setResolved(null);
     resolveAttachmentUrl(url)
       .then((u) => {
-        if (!cancelled) setResolved(u);
+        if (cancelled) return;
+        if (u.startsWith('data:')) {
+          createdObjectUrl = dataUrlToObjectUrl(u);
+          setResolved(createdObjectUrl);
+        } else {
+          setResolved(u);
+        }
       })
       .catch(() => {
         if (!cancelled) setResolved('');
       });
     return () => {
       cancelled = true;
+      if (createdObjectUrl) URL.revokeObjectURL(createdObjectUrl);
     };
   }, [url]);
   return resolved;
