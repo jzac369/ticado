@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createTicket } from '../firebase/tickets';
 import { subscribeCustomers } from '../firebase/customers';
 import { subscribeGeneralSettings, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
+import { MAX_ATTACHMENT_FILE_SIZE } from '../firebase/attachments';
 import type { Customer, TicketChannel, TicketPriority } from '../types';
 import { CHANNEL_LABELS, PRIORITY_LABELS } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,6 +32,8 @@ export function NewTicketPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<GeneralSettings>(DEFAULT_GENERAL_SETTINGS);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => subscribeCustomers(setCustomers), []);
   useEffect(() => subscribeGeneralSettings(setSettings), []);
@@ -38,6 +41,30 @@ export function NewTicketPage() {
   useEffect(() => {
     if (!customerId && customers.length > 0) setCustomerId(customers[0].id);
   }, [customers, customerId]);
+
+  function addFiles(files: FileList | File[]) {
+    const incoming = Array.from(files);
+    const tooBig = incoming.filter((f) => f.size > MAX_ATTACHMENT_FILE_SIZE);
+    if (tooBig.length > 0) {
+      setError(
+        `${tooBig.map((f) => f.name).join(', ')} presahuje limit ${Math.round(MAX_ATTACHMENT_FILE_SIZE / 1024)} KB na súbor a nebude priložený.`,
+      );
+    }
+    const ok = incoming.filter((f) => f.size <= MAX_ATTACHMENT_FILE_SIZE);
+    if (ok.length > 0) setPendingFiles((prev) => [...prev, ...ok]);
+  }
+
+  function removeFile(index: number) {
+    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const imageFiles = Array.from(e.clipboardData.items)
+      .filter((item) => item.type.startsWith('image/'))
+      .map((item) => item.getAsFile())
+      .filter((f): f is File => f !== null);
+    if (imageFiles.length > 0) addFiles(imageFiles);
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -63,10 +90,11 @@ export function NewTicketPage() {
         priority,
         channel: isClient ? 'web' : channel,
         assignmentStrategy: isClient ? undefined : settings.assignmentStrategy,
+        files: pendingFiles,
       });
       navigate(`/tickets/${id}`);
     } catch (err) {
-      setError('Nepodarilo sa vytvoriť tiket. Skúste to znova.');
+      setError(err instanceof Error ? err.message : 'Nepodarilo sa vytvoriť tiket. Skúste to znova.');
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -171,11 +199,91 @@ export function NewTicketPage() {
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+                onPaste={handlePaste}
                 placeholder="Kedy sa to začalo, koho sa problém týka, čo ste už skúšali a aký je očakávaný výsledok…"
                 rows={6}
                 style={{ ...inputStyle, resize: 'vertical' }}
               />
             </Field>
+          </div>
+
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragOver(false);
+              if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files);
+            }}
+            style={{
+              marginTop: 14,
+              padding: 14,
+              border: `1.5px dashed ${dragOver ? 'var(--color-primary)' : 'var(--color-border)'}`,
+              borderRadius: 'var(--radius-md)',
+              background: dragOver ? 'var(--color-primary-bg)' : 'var(--color-surface-2)',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)', marginBottom: 8 }}>
+              Potiahnite súbory sem alebo vložte screenshot (Ctrl+V do popisu)
+              <br />
+              <span style={{ fontSize: 11 }}>Max. {Math.round(MAX_ATTACHMENT_FILE_SIZE / 1024)} KB na súbor</span>
+            </div>
+            <label
+              style={{
+                display: 'inline-block',
+                padding: '6px 14px',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--color-surface)',
+                fontSize: 12.5,
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Vybrať súbory
+              <input
+                type="file"
+                multiple
+                onChange={(e) => {
+                  if (e.target.files) addFiles(e.target.files);
+                  e.target.value = '';
+                }}
+                style={{ display: 'none' }}
+              />
+            </label>
+
+            {pendingFiles.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10, justifyContent: 'center' }}>
+                {pendingFiles.map((f, i) => (
+                  <span
+                    key={i}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      fontSize: 12,
+                      padding: '4px 8px',
+                      background: 'var(--color-surface)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius-sm)',
+                    }}
+                  >
+                    📎 {f.name}
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      style={{ border: 'none', background: 'none', color: 'var(--color-danger)', cursor: 'pointer', fontWeight: 700 }}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </Section>
 
