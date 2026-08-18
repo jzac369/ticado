@@ -13,6 +13,7 @@ import {
 import { uploadAttachments } from '../firebase/attachments';
 import { subscribeGeneralSettings, isSupportOpenNow, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
 import { Icon } from './Icon';
+import { AttachmentChip } from './AttachmentView';
 
 const STORAGE_KEY = 'ticado_livechat_id';
 const NAME_KEY = 'ticado_livechat_name';
@@ -294,23 +295,7 @@ export function LiveChatWidget({
                 >
                   {m.body}
                   {m.attachments?.map((a) => (
-                    <a
-                      key={a.url}
-                      href={a.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        marginTop: m.body ? 6 : 0,
-                        fontSize: 11.5,
-                        color: 'inherit',
-                        textDecoration: 'underline',
-                      }}
-                    >
-                      <Icon name="paperclip" size={11} /> {a.name}
-                    </a>
+                    <AttachmentChip key={a.url} attachment={a} style={{ marginTop: m.body ? 6 : 0 }} />
                   ))}
                 </div>
               </div>

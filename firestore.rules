@@ -196,6 +196,22 @@ service cloud.firestore {
       }
     }
 
+    // Attachment file content, base64-encoded, stored directly in Firestore
+    // as a stand-in for Firebase Storage (not enabled on this project's
+    // Spark billing plan). Kept in its own collection - not embedded in the
+    // ticket/message/chat document itself - so that list/collectionGroup
+    // queries over those (e.g. the Dashboard's recent-messages feed) stay
+    // small; only opening a specific ticket/chat/conversation fetches the
+    // attachment content it actually needs. `kind` mirrors the trust levels
+    // the old storage.rules used per upload path.
+    match /attachmentBlobs/{blobId} {
+      allow read: if resource.data.kind == 'livechat' || isSignedIn();
+      allow create: if request.resource.data.data.size() < 1000000 &&
+        (request.resource.data.kind in ['ticket', 'livechat'] ||
+         (request.resource.data.kind == 'conversation' && isAgent()));
+      allow update, delete: if false;
+    }
+
     // Public maintenance/outage announcement banner - shown to anyone
     // (clients and the public intake form), editable only by agents.
     match /settings/{settingId} {

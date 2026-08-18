@@ -18,6 +18,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { PriorityBadge, StatusBadge, statusColors, priorityColors } from '../components/Badges';
 import { subscribeAgents, type Agent } from '../firebase/agents';
 import { uploadAttachments } from '../firebase/attachments';
+import { AttachmentThumb } from '../components/AttachmentView';
 import { subscribeTemplates, type ReplyTemplate } from '../firebase/templates';
 import { TicketTimeline } from '../components/TicketTimeline';
 import { Icon } from '../components/Icon';
@@ -33,47 +34,13 @@ function fmt(ts: TicketMessage['createdAt']) {
   });
 }
 
-function formatSize(bytes: number) {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
 function AttachmentList({ attachments }: { attachments?: Attachment[] }) {
   if (!attachments || attachments.length === 0) return null;
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
-      {attachments.map((a, i) =>
-        a.contentType.startsWith('image/') ? (
-          <a key={i} href={a.url} target="_blank" rel="noreferrer">
-            <img
-              src={a.url}
-              alt={a.name}
-              style={{ maxWidth: 160, maxHeight: 120, borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}
-            />
-          </a>
-        ) : (
-          <a
-            key={i}
-            href={a.url}
-            target="_blank"
-            rel="noreferrer"
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 12,
-              padding: '6px 10px',
-              background: 'var(--color-surface)',
-              border: '1px solid var(--color-border)',
-              borderRadius: 'var(--radius-sm)',
-              color: 'var(--color-text)',
-            }}
-          >
-            <Icon name="paperclip" size={12} /> {a.name} <span style={{ color: 'var(--color-text-faint)' }}>({formatSize(a.size)})</span>
-          </a>
-        ),
-      )}
+      {attachments.map((a, i) => (
+        <AttachmentThumb key={i} attachment={a} />
+      ))}
     </div>
   );
 }

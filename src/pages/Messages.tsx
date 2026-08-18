@@ -25,6 +25,7 @@ import { lookupTicketIdByCode } from '../firebase/tickets';
 import { uploadAttachments } from '../firebase/attachments';
 import { useAuth } from '../contexts/AuthContext';
 import { Icon } from '../components/Icon';
+import { AttachmentChip } from '../components/AttachmentView';
 
 const REACTIONS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -522,15 +523,7 @@ export function MessagesPage() {
                     >
                       {renderBody(m.body, agents)}
                       {m.attachments?.map((a) => (
-                        <a
-                          key={a.url}
-                          href={a.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: m.body ? 6 : 0, fontSize: 11.5, color: 'inherit', textDecoration: 'underline' }}
-                        >
-                          <Icon name="paperclip" size={11} /> {a.name}
-                        </a>
+                        <AttachmentChip key={a.url} attachment={a} style={{ marginTop: m.body ? 6 : 0 }} />
                       ))}
                       {m.ticketCode && (
                         <div

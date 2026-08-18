@@ -23,6 +23,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { StatusBadge, PriorityBadge } from '../components/Badges';
 import { TicketTimeline } from '../components/TicketTimeline';
 import { Icon } from '../components/Icon';
+import { AttachmentChip } from '../components/AttachmentView';
 import type { Ticket, ActivityEntry } from '../types';
 
 const TYPING_STALE_MS = 4000;
@@ -343,15 +344,7 @@ export function LiveChatInboxPage() {
                   )}
                   {m.body}
                   {m.attachments?.map((a) => (
-                    <a
-                      key={a.url}
-                      href={a.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: m.body ? 6 : 0, fontSize: 11.5, color: 'inherit', textDecoration: 'underline' }}
-                    >
-                      <Icon name="paperclip" size={11} /> {a.name}
-                    </a>
+                    <AttachmentChip key={a.url} attachment={a} style={{ marginTop: m.body ? 6 : 0 }} />
                   ))}
                 </div>
               </div>
