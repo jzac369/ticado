@@ -13,6 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Ticket, TicketMessage, TicketPriority, TicketStatus } from '../types';
 import { PRIORITY_LABELS, STATUS_LABELS } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/Badges';
+import { AttachmentBadgeRow, attachmentsByTicketFromMessages } from '../components/AttachmentView';
 
 function formatDate(ticket: Ticket, field: 'createdAt' | 'closedAt') {
   const ts = ticket[field];
@@ -37,9 +38,10 @@ export function TicketsListPage() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<TicketStatus | ''>('');
   const [priorityFilter, setPriorityFilter] = useState<TicketPriority | ''>('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'category'>('newest');
   const [pageSize, setPageSize] = useState(25);
   const [page, setPage] = useState(1);
   const [quickFilter, setQuickFilter] = useState<'all' | 'open' | 'closed'>('all');
@@ -68,6 +70,13 @@ export function TicketsListPage() {
     return map;
   }, [messages]);
 
+  // Distinct-by-type attachments per ticket, for the file-type badges next
+  // to the subject - only reflects the 500 most recently loaded messages
+  // (same window subscribeRecentMessages already limits search/preview to).
+  const attachmentsByTicket = useMemo(() => attachmentsByTicketFromMessages(messages), [messages]);
+
+  const categories = useMemo(() => [...new Set(tickets.map((t) => t.category).filter(Boolean))].sort(), [tickets]);
+
   const filtered = useMemo(() => {
     let list = [...tickets];
 
@@ -76,6 +85,7 @@ export function TicketsListPage() {
 
     if (statusFilter) list = list.filter((t) => t.status === statusFilter);
     if (priorityFilter) list = list.filter((t) => t.priority === priorityFilter);
+    if (categoryFilter) list = list.filter((t) => t.category === categoryFilter);
 
     if (dateFrom) {
       const from = new Date(dateFrom).getTime();
@@ -97,13 +107,14 @@ export function TicketsListPage() {
     }
 
     list.sort((a, b) => {
+      if (sortBy === 'category') return (a.category || '').localeCompare(b.category || '');
       const at = a.createdAt?.toMillis() ?? 0;
       const bt = b.createdAt?.toMillis() ?? 0;
       return sortBy === 'newest' ? bt - at : at - bt;
     });
 
     return list;
-  }, [tickets, quickFilter, statusFilter, priorityFilter, dateFrom, dateTo, search, sortBy, messageTextByTicket]);
+  }, [tickets, quickFilter, statusFilter, priorityFilter, categoryFilter, dateFrom, dateTo, search, sortBy, messageTextByTicket]);
 
   const stats = useMemo(() => {
     const all = tickets.length;
@@ -123,6 +134,7 @@ export function TicketsListPage() {
     setSearch('');
     setStatusFilter('');
     setPriorityFilter('');
+    setCategoryFilter('');
     setDateFrom('');
     setDateTo('');
     setQuickFilter('all');
@@ -278,7 +290,7 @@ export function TicketsListPage() {
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr) auto',
+            gridTemplateColumns: 'repeat(5, 1fr) auto',
             gap: 12,
             alignItems: 'end',
             marginBottom: 14,
@@ -314,6 +326,23 @@ export function TicketsListPage() {
               {Object.entries(PRIORITY_LABELS).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label="Kategória">
+            <select
+              value={categoryFilter}
+              onChange={(e) => {
+                setCategoryFilter(e.target.value);
+                setPage(1);
+              }}
+              style={selectStyle}
+            >
+              <option value="">Všetky kategórie</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
                 </option>
               ))}
             </select>
@@ -355,9 +384,10 @@ export function TicketsListPage() {
           ))}
 
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest')} style={selectStyle}>
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} style={selectStyle}>
               <option value="newest">Najnovšie</option>
               <option value="oldest">Najstaršie</option>
+              <option value="category">Podľa kategórie (A-Z)</option>
             </select>
             <select
               value={pageSize}
@@ -518,9 +548,13 @@ export function TicketsListPage() {
                 </td>
                 <td style={{ padding: '12px 14px', fontWeight: 700, color: 'var(--color-primary)' }}>{t.code}</td>
                 <td style={{ padding: '12px 14px' }}>
-                  <div style={{ fontWeight: 600 }}>{t.subject}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontWeight: 600 }}>{t.subject}</span>
+                    <AttachmentBadgeRow attachments={attachmentsByTicket.get(t.id)} />
+                  </div>
                   <div style={{ fontSize: 12, color: 'var(--color-text-faint)' }}>
                     {t.requesterName} · {t.customerName}
+                    {t.category ? ` · ${t.category}` : ''}
                   </div>
                   {t.tags && t.tags.length > 0 && (
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>

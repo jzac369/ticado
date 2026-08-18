@@ -1,7 +1,44 @@
 import { useEffect, useRef, useState } from 'react';
-import type { Attachment } from '../types';
+import type { Attachment, TicketMessage } from '../types';
 import { resolveAttachmentUrl } from '../firebase/attachments';
 import { Icon } from './Icon';
+
+/** Distinct-by-type attachments per ticket (e.g. one JPG badge even if the
+ * ticket has three JPGs), built from a message feed such as
+ * subscribeRecentMessages - so it only reflects however many of the most
+ * recent messages that feed was subscribed with. */
+export function attachmentsByTicketFromMessages(messages: TicketMessage[]): Map<string, Attachment[]> {
+  const map = new Map<string, Attachment[]>();
+  messages.forEach((m) => {
+    if (!m.attachments || m.attachments.length === 0) return;
+    const existing = map.get(m.ticketId) ?? [];
+    const seenTypes = new Set(existing.map((a) => a.contentType + '|' + a.name.split('.').pop()));
+    m.attachments.forEach((a) => {
+      const key = a.contentType + '|' + a.name.split('.').pop();
+      if (!seenTypes.has(key)) {
+        seenTypes.add(key);
+        existing.push(a);
+      }
+    });
+    map.set(m.ticketId, existing);
+  });
+  return map;
+}
+
+/** Row of up to 3 file-type badges (+N overflow) for a ticket-list row. */
+export function AttachmentBadgeRow({ attachments }: { attachments?: Attachment[] }) {
+  if (!attachments || attachments.length === 0) return null;
+  return (
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
+      {attachments.slice(0, 3).map((a, i) => (
+        <AttachmentTypeBadge key={i} attachment={a} />
+      ))}
+      {attachments.length > 3 && (
+        <span style={{ fontSize: 9, color: 'var(--color-text-faint)', fontWeight: 700 }}>+{attachments.length - 3}</span>
+      )}
+    </span>
+  );
+}
 
 export function formatFileSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;

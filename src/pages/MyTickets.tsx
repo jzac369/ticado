@@ -13,8 +13,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Ticket, TicketMessage, TicketPriority, TicketStatus } from '../types';
 import { CHANNEL_LABELS, PRIORITY_LABELS, STATUS_LABELS } from '../types';
 import { StatusBadge, PriorityBadge } from '../components/Badges';
-import { AttachmentTypeBadge } from '../components/AttachmentView';
-import type { Attachment } from '../types';
+import { AttachmentBadgeRow, attachmentsByTicketFromMessages } from '../components/AttachmentView';
 
 function ageLabel(createdAt: Ticket['createdAt']) {
   if (!createdAt) return '—';
@@ -32,6 +31,8 @@ export function MyTicketsPage() {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [messages, setMessages] = useState<TicketMessage[]>([]);
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'category'>('newest');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const navigate = useNavigate();
@@ -61,23 +62,7 @@ export function MyTicketsPage() {
   // Distinct-by-type attachments per ticket, for the file-type badges next
   // to the subject - only reflects the 500 most recently loaded messages
   // (same window subscribeRecentMessages already limits search/preview to).
-  const attachmentsByTicket = useMemo(() => {
-    const map = new Map<string, Attachment[]>();
-    messages.forEach((m) => {
-      if (!m.attachments || m.attachments.length === 0) return;
-      const existing = map.get(m.ticketId) ?? [];
-      const seenTypes = new Set(existing.map((a) => a.contentType + '|' + a.name.split('.').pop()));
-      m.attachments.forEach((a) => {
-        const key = a.contentType + '|' + a.name.split('.').pop();
-        if (!seenTypes.has(key)) {
-          seenTypes.add(key);
-          existing.push(a);
-        }
-      });
-      map.set(m.ticketId, existing);
-    });
-    return map;
-  }, [messages]);
+  const attachmentsByTicket = useMemo(() => attachmentsByTicketFromMessages(messages), [messages]);
 
   const myTickets = useMemo(() => {
     if (isClient && profile?.role === 'klient') {
@@ -87,17 +72,33 @@ export function MyTicketsPage() {
     return tickets.filter((t) => t.assignedTo === myAgent.name);
   }, [tickets, isClient, profile, user, myAgent]);
 
+  const categories = useMemo(() => [...new Set(myTickets.map((t) => t.category).filter(Boolean))].sort(), [myTickets]);
+
   const filtered = useMemo(() => {
+    let list = myTickets;
+
+    if (categoryFilter) list = list.filter((t) => t.category === categoryFilter);
+
     const q = search.trim().toLowerCase();
-    if (!q) return myTickets;
-    const words = q.split(/\s+/).filter(Boolean);
-    const exactPhrase = q.startsWith('"') && q.endsWith('"') && q.length > 1;
-    return myTickets.filter((t) => {
-      const haystack = `${t.code} ${t.subject} ${t.customerName} ${t.requesterName} ${(t.tags ?? []).join(' ')} ${messageTextByTicket.get(t.id) ?? ''}`.toLowerCase();
-      if (exactPhrase) return haystack.includes(q.slice(1, -1));
-      return words.every((w) => haystack.includes(w));
+    if (q) {
+      const words = q.split(/\s+/).filter(Boolean);
+      const exactPhrase = q.startsWith('"') && q.endsWith('"') && q.length > 1;
+      list = list.filter((t) => {
+        const haystack = `${t.code} ${t.subject} ${t.customerName} ${t.requesterName} ${(t.tags ?? []).join(' ')} ${messageTextByTicket.get(t.id) ?? ''}`.toLowerCase();
+        if (exactPhrase) return haystack.includes(q.slice(1, -1));
+        return words.every((w) => haystack.includes(w));
+      });
+    }
+
+    list = [...list].sort((a, b) => {
+      if (sortBy === 'category') return (a.category || '').localeCompare(b.category || '');
+      const at = a.createdAt?.toMillis() ?? 0;
+      const bt = b.createdAt?.toMillis() ?? 0;
+      return sortBy === 'oldest' ? at - bt : bt - at;
     });
-  }, [myTickets, search, messageTextByTicket]);
+
+    return list;
+  }, [myTickets, search, messageTextByTicket, categoryFilter, sortBy]);
 
   const allSelected = filtered.length > 0 && filtered.every((t) => selected.has(t.id));
 
@@ -200,10 +201,26 @@ export function MyTicketsPage() {
           padding: '10px 14px',
           border: '1px solid var(--color-border)',
           borderRadius: 'var(--radius-md)',
-          marginBottom: 12,
+          marginBottom: 10,
           background: 'var(--color-surface)',
         }}
       />
+
+      <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} style={filterSelectStyle}>
+          <option value="">Všetky kategórie</option>
+          {categories.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+        </select>
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as typeof sortBy)} style={filterSelectStyle}>
+          <option value="newest">Najnovšie</option>
+          <option value="oldest">Najstaršie</option>
+          <option value="category">Podľa kategórie (A-Z)</option>
+        </select>
+      </div>
 
       {!isClient && selected.size > 0 && (
         <div
@@ -328,22 +345,9 @@ export function MyTicketsPage() {
                 <td style={{ padding: '12px 14px', fontWeight: 600 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span>{t.subject}</span>
-                    {(attachmentsByTicket.get(t.id)?.length ?? 0) > 0 && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 3, flexShrink: 0 }}>
-                        {attachmentsByTicket
-                          .get(t.id)!
-                          .slice(0, 3)
-                          .map((a, i) => (
-                            <AttachmentTypeBadge key={i} attachment={a} />
-                          ))}
-                        {attachmentsByTicket.get(t.id)!.length > 3 && (
-                          <span style={{ fontSize: 9, color: 'var(--color-text-faint)', fontWeight: 700 }}>
-                            +{attachmentsByTicket.get(t.id)!.length - 3}
-                          </span>
-                        )}
-                      </span>
-                    )}
+                    <AttachmentBadgeRow attachments={attachmentsByTicket.get(t.id)} />
                   </div>
+                  {t.category && <div style={{ fontSize: 11, fontWeight: 400, color: 'var(--color-text-faint)', marginTop: 2 }}>{t.category}</div>}
                 </td>
                 <td style={{ padding: '12px 14px' }}>{t.customerName}</td>
                 <td style={{ padding: '12px 14px' }}>{t.requesterName}</td>
@@ -366,6 +370,14 @@ export function MyTicketsPage() {
     </div>
   );
 }
+
+const filterSelectStyle = {
+  padding: '9px 12px',
+  border: '1px solid var(--color-border)',
+  borderRadius: 'var(--radius-md)',
+  background: 'var(--color-surface)',
+  fontSize: 13,
+} as const;
 
 const bulkSelectStyle = {
   minWidth: 172,
