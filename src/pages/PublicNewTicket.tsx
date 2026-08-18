@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent, type ReactNode } from 'react';
 import { createTicket } from '../firebase/tickets';
+import { MAX_ATTACHMENT_FILE_SIZE } from '../firebase/attachments';
 import { subscribeCustomers } from '../firebase/customers';
 import { subscribeGeneralSettings, isSupportOpenNow, DEFAULT_GENERAL_SETTINGS, type GeneralSettings } from '../firebase/generalSettings';
 import { subscribeKbArticles, type KbArticle } from '../firebase/kbArticles';
@@ -59,7 +60,15 @@ export function PublicNewTicketPage() {
   }
 
   function addFiles(files: FileList | File[]) {
-    setPendingFiles((prev) => [...prev, ...Array.from(files)]);
+    const incoming = Array.from(files);
+    const tooBig = incoming.filter((f) => f.size > MAX_ATTACHMENT_FILE_SIZE);
+    if (tooBig.length > 0) {
+      setError(
+        `${tooBig.map((f) => f.name).join(', ')} presahuje limit ${Math.round(MAX_ATTACHMENT_FILE_SIZE / 1024)} KB na súbor a nebude priložený.`,
+      );
+    }
+    const ok = incoming.filter((f) => f.size <= MAX_ATTACHMENT_FILE_SIZE);
+    if (ok.length > 0) setPendingFiles((prev) => [...prev, ...ok]);
   }
 
   function removeFile(index: number) {
@@ -124,7 +133,7 @@ export function PublicNewTicketPage() {
       setCreatedCode(code);
       setPendingFiles([]);
     } catch (err) {
-      setError('Nepodarilo sa odoslať požiadavku. Skúste to prosím znova.');
+      setError(err instanceof Error ? err.message : 'Nepodarilo sa odoslať požiadavku. Skúste to prosím znova.');
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -522,6 +531,8 @@ export function PublicNewTicketPage() {
               >
                 <div style={{ fontSize: 12.5, color: 'var(--color-text-muted)', marginBottom: 8 }}>
                   Potiahnite súbory sem alebo vložte screenshot (Ctrl+V do popisu)
+                  <br />
+                  <span style={{ fontSize: 11 }}>Max. {Math.round(MAX_ATTACHMENT_FILE_SIZE / 1024)} KB na súbor</span>
                 </div>
                 <label
                   style={{

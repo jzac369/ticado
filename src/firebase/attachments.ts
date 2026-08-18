@@ -7,7 +7,8 @@ import type { Attachment } from '../types';
  * base64-encoded and stored directly as a Firestore document instead.
  * Firestore caps a document at 1 MiB; base64 adds ~33% overhead, so the
  * raw file must stay well under that after encoding. */
-const MAX_FILE_SIZE = 700 * 1024;
+export const MAX_ATTACHMENT_FILE_SIZE = 700 * 1024;
+const MAX_FILE_SIZE = MAX_ATTACHMENT_FILE_SIZE;
 
 const ATTACHMENT_URL_PREFIX = 'fsblob://';
 
